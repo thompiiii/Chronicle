@@ -35,12 +35,29 @@ const DICE = [
   { sides: 100, label: "d100", color: "bg-pink-700 hover:bg-pink-600",     dot: "○" },
 ];
 
+const QUICK_ACTIONS = ["I search the room", "I attack!", "I cast a spell", "I try to sneak", "I talk to them"];
+
+const TAB_BUTTONS = [
+  { id: "dice",      label: "🎲 Dice" },
+  { id: "sheet",     label: "📜 Sheet" },
+  { id: "inventory", label: "🎒 Bag" },
+];
+
+// Tailwind class constants — module-level so they're not recreated each render
+const card  = "bg-gray-800 border border-gray-700 rounded-lg";
+const btn   = "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors cursor-pointer";
+const btnSm = "px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors cursor-pointer";
+const inp   = "bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-full";
+
 function rollDie(sides) { return Math.floor(Math.random() * sides) + 1; }
 
 function modifier(score) {
   const m = Math.floor((score - 10) / 2);
   return m >= 0 ? `+${m}` : `${m}`;
 }
+
+// Formats a signed integer for display: 0 → "+0", -2 → "-2", 3 → "+3"
+function fmtSign(n) { return n >= 0 ? `+${n}` : `${n}`; }
 
 function getStartingInventory(charClass) {
   return (STARTING_INVENTORY[charClass] || STARTING_INVENTORY.default).map(item => ({ ...item, qty: item.qty || 1 }));
@@ -56,10 +73,15 @@ function generateStats() {
   return stats;
 }
 
+let msgIdCounter = 1;
+function makeMsg(role, text, extra = {}) {
+  return { id: msgIdCounter++, role, text, ...extra };
+}
+
 // ── Dice Roller Panel ──────────────────────────────────────────────────────
 function DiceRoller({ onRollToChat }) {
   const [count, setCount] = useState(1);
-  const [modifier_, setModifier_] = useState(0);
+  const [rollMod, setRollMod] = useState(0);
   const [lastRoll, setLastRoll] = useState(null);
   const [rolling, setRolling] = useState(false);
 
@@ -68,8 +90,8 @@ function DiceRoller({ onRollToChat }) {
     setLastRoll(null);
     await new Promise(r => setTimeout(r, 350));
     const rolls = Array.from({ length: count }, () => rollDie(sides));
-    const total = rolls.reduce((a, b) => a + b, 0) + modifier_;
-    const result = { sides, count, rolls, modifier: modifier_, total, isCrit: sides === 20 && rolls[0] === 20, isFumble: sides === 20 && rolls[0] === 1 };
+    const total = rolls.reduce((a, b) => a + b, 0) + rollMod;
+    const result = { sides, count, rolls, modifier: rollMod, total, isCrit: sides === 20 && rolls[0] === 20, isFumble: sides === 20 && rolls[0] === 1 };
     setLastRoll(result);
     setRolling(false);
     if (onRollToChat) onRollToChat(result);
@@ -89,16 +111,16 @@ function DiceRoller({ onRollToChat }) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-gray-400 text-xs">Mod</span>
-          <button onClick={() => setModifier_(m => m - 1)} className="w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm cursor-pointer flex items-center justify-center">−</button>
-          <span className="text-white font-bold w-6 text-center">{modifier_ >= 0 ? `+${modifier_}` : modifier_}</span>
-          <button onClick={() => setModifier_(m => m + 1)} className="w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm cursor-pointer flex items-center justify-center">+</button>
+          <button onClick={() => setRollMod(m => m - 1)} className="w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm cursor-pointer flex items-center justify-center">−</button>
+          <span className="text-white font-bold w-6 text-center">{fmtSign(rollMod)}</span>
+          <button onClick={() => setRollMod(m => m + 1)} className="w-6 h-6 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm cursor-pointer flex items-center justify-center">+</button>
         </div>
         {lastRoll && (
           <div className="ml-auto text-right">
             <span className={`text-2xl font-bold ${resultColor}`}>{lastRoll.total}</span>
             {lastRoll.isCrit && <span className="ml-1 text-xs text-yellow-400">CRIT!</span>}
             {lastRoll.isFumble && <span className="ml-1 text-xs text-red-400">FUMBLE</span>}
-            {lastRoll.count > 1 && <p className="text-gray-500 text-xs">[{lastRoll.rolls.join(", ")}]{lastRoll.modifier !== 0 ? ` ${lastRoll.modifier > 0 ? "+" : ""}${lastRoll.modifier}` : ""}</p>}
+            {lastRoll.count > 1 && <p className="text-gray-500 text-xs">[{lastRoll.rolls.join(", ")}]{lastRoll.modifier !== 0 ? ` ${fmtSign(lastRoll.modifier)}` : ""}</p>}
           </div>
         )}
         {rolling && <div className="ml-auto text-2xl animate-spin">🎲</div>}
@@ -129,7 +151,7 @@ export default function App() {
   const [charRace, setCharRace] = useState("Human");
   const [charName, setCharName] = useState("");
   const [stats, setStats] = useState(INITIAL_STATS);
-  const [messages, setMessages] = useState([{ role: "dm", text: SAMPLE_CAMPAIGN }]);
+  const [messages, setMessages] = useState([makeMsg("dm", SAMPLE_CAMPAIGN)]);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [dmOverride, setDmOverride] = useState(false);
@@ -144,6 +166,10 @@ export default function App() {
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [messages]);
+
+  useEffect(() => {
+    return () => window.speechSynthesis?.cancel();
+  }, []);
 
   function createSession() {
     const code = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -160,8 +186,7 @@ export default function App() {
   }
 
   function autoGenerateCharacter() {
-    const generated = generateStats();
-    setStats(generated);
+    setStats(generateStats());
     setCharName(`${charRace} ${charClass} #${Math.floor(Math.random() * 999) + 1}`);
   }
 
@@ -184,23 +209,27 @@ export default function App() {
 
   function handleRollToChat(result) {
     const label = result.isCrit ? " 🌟 CRITICAL HIT!" : result.isFumble ? " 💀 FUMBLE" : "";
-    const detail = result.count > 1 ? `[${result.rolls.join(", ")}]${result.modifier !== 0 ? ` ${result.modifier > 0 ? "+" : ""}${result.modifier}` : ""}` : "";
-    const text = `🎲 Rolled ${result.count}d${result.sides}${result.modifier !== 0 ? (result.modifier > 0 ? `+${result.modifier}` : result.modifier) : ""}: **${result.total}**${detail}${label}`;
-    setMessages(prev => [...prev, { role: "player", text, name: character?.name, isRoll: true }]);
+    const modStr = result.modifier !== 0 ? fmtSign(result.modifier) : "";
+    const detail = result.count > 1 ? `[${result.rolls.join(", ")}]${modStr ? ` ${modStr}` : ""}` : "";
+    const text = `🎲 Rolled ${result.count}d${result.sides}${modStr}: **${result.total}**${detail}${label}`;
+    setMessages(prev => [...prev, makeMsg("player", text, { name: character?.name, isRoll: true })]);
   }
 
   async function sendMessage() {
     if (!userInput.trim() || loading) return;
     const msg = userInput.trim();
     setUserInput("");
-    setMessages(prev => [...prev, { role: "player", text: msg, name: character?.name }]);
+    setMessages(prev => [...prev, makeMsg("player", msg, { name: character?.name })]);
     setLoading(true);
-    await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
-    const reply = MOCK_RESPONSES[mockIndex.current % MOCK_RESPONSES.length];
-    mockIndex.current++;
-    setMessages(prev => [...prev, { role: "dm", text: reply }]);
-    speakText(reply);
-    setLoading(false);
+    try {
+      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+      const reply = MOCK_RESPONSES[mockIndex.current % MOCK_RESPONSES.length];
+      mockIndex.current++;
+      setMessages(prev => [...prev, makeMsg("dm", reply)]);
+      speakText(reply);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function speakText(text) {
@@ -215,11 +244,6 @@ export default function App() {
     utterance.onend = () => setSpeaking(false);
     window.speechSynthesis.speak(utterance);
   }
-
-  const card = "bg-gray-800 border border-gray-700 rounded-lg";
-  const btn = "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors cursor-pointer";
-  const btnSm = "px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors cursor-pointer";
-  const inp = "bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-full";
 
   if (screen === "home") return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
@@ -346,9 +370,12 @@ export default function App() {
               {dmOverride ? "⚡ ON" : "Override"}
             </button>
           )}
-          <button onClick={() => setActiveTab(activeTab === "dice" ? null : "dice")} className={`text-xs px-2 py-1 rounded border cursor-pointer transition-colors ${activeTab === "dice" ? "bg-gray-600 border-gray-500 text-white" : "border-gray-600 text-gray-400 hover:border-gray-500"}`}>🎲 Dice</button>
-          <button onClick={() => setActiveTab(activeTab === "sheet" ? null : "sheet")} className={`text-xs px-2 py-1 rounded border cursor-pointer transition-colors ${activeTab === "sheet" ? "bg-gray-600 border-gray-500 text-white" : "border-gray-600 text-gray-400 hover:border-gray-500"}`}>📜 Sheet</button>
-          <button onClick={() => setActiveTab(activeTab === "inventory" ? null : "inventory")} className={`text-xs px-2 py-1 rounded border cursor-pointer transition-colors ${activeTab === "inventory" ? "bg-gray-600 border-gray-500 text-white" : "border-gray-600 text-gray-400 hover:border-gray-500"}`}>🎒 Bag</button>
+          {TAB_BUTTONS.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(activeTab === t.id ? null : t.id)}
+              className={`text-xs px-2 py-1 rounded border cursor-pointer transition-colors ${activeTab === t.id ? "bg-gray-600 border-gray-500 text-white" : "border-gray-600 text-gray-400 hover:border-gray-500"}`}>
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -421,8 +448,8 @@ export default function App() {
 
       {/* Chat */}
       <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((m, i) => (
-          <div key={i} className={`flex gap-3 ${m.role === "player" ? "flex-row-reverse" : ""}`}>
+        {messages.map(m => (
+          <div key={m.id} className={`flex gap-3 ${m.role === "player" ? "flex-row-reverse" : ""}`}>
             <div className="text-xl flex-shrink-0 mt-1">{m.role === "dm" ? "🎲" : CLASS_ICONS[character?.class] || "🧙"}</div>
             <div className={`max-w-sm rounded-lg p-3 ${m.isRoll ? "bg-gray-700 border border-gray-600" : m.role === "dm" ? "bg-gray-800 border border-gray-700" : "bg-indigo-900 border border-indigo-700"}`}>
               <p className={`text-xs mb-1 font-semibold ${m.role === "dm" ? "text-indigo-400" : m.isRoll ? "text-yellow-400" : "text-indigo-300"}`}>
@@ -452,7 +479,7 @@ export default function App() {
           <button className={btn} onClick={sendMessage} disabled={loading}>{loading ? "⏳" : "Send"}</button>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {["I search the room", "I attack!", "I cast a spell", "I try to sneak", "I talk to them"].map(a => (
+          {QUICK_ACTIONS.map(a => (
             <button key={a} onClick={() => setUserInput(a)} className="text-xs text-gray-400 border border-gray-700 rounded px-2 py-1 hover:border-gray-500 hover:text-white cursor-pointer transition-colors">{a}</button>
           ))}
         </div>
