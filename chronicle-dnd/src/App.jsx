@@ -42,7 +42,44 @@ const TAB_BUTTONS = [
   { id: "sheet",     label: "📜 Sheet" },
   { id: "inventory", label: "🎒 Bag" },
   { id: "combat",    label: "⚔️ Fight" },
+  { id: "notes",     label: "📝 Notes" },
 ];
+
+const SPELLCASTER_CLASSES = ["Bard","Cleric","Druid","Sorcerer","Warlock","Wizard","Paladin","Ranger"];
+
+// Spell slots per class level index (0=lv1): [1st,2nd,3rd,4th,5th,6th,7th,8th,9th]
+const FULL_CASTER_SLOTS = [[2],[3],[4,2],[4,3],[4,3,2],[4,3,3],[4,3,3,1],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2,1],[4,3,3,3,2,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1,1],[4,3,3,3,3,1,1,1,1],[4,3,3,3,3,2,1,1,1],[4,3,3,3,3,2,2,1,1]];
+const HALF_CASTER_SLOTS  = [[],[2],[3],[3],[4,2],[4,2],[4,3],[4,3],[4,3,2],[4,3,2],[4,3,3],[4,3,3],[4,3,3,1],[4,3,3,1],[4,3,3,2],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,1],[4,3,3,3,2],[4,3,3,3,2]];
+const WARLOCK_SLOTS      = [[1],[2],[0,2],[0,2],[0,0,2],[0,0,2],[0,0,0,2],[0,0,0,2],[0,0,0,0,2],[0,0,0,0,2],[0,0,0,0,3],[0,0,0,0,3],[0,0,0,0,3],[0,0,0,0,3],[0,0,0,0,4],[0,0,0,0,4],[0,0,0,0,4],[0,0,0,0,4],[0,0,0,0,4],[0,0,0,0,4]];
+const CLASS_SLOT_TABLE = { Bard: FULL_CASTER_SLOTS, Cleric: FULL_CASTER_SLOTS, Druid: FULL_CASTER_SLOTS, Sorcerer: FULL_CASTER_SLOTS, Wizard: FULL_CASTER_SLOTS, Paladin: HALF_CASTER_SLOTS, Ranger: HALF_CASTER_SLOTS, Warlock: WARLOCK_SLOTS };
+
+function getSpellSlotMaxes(charClass, level) {
+  const table = CLASS_SLOT_TABLE[charClass];
+  if (!table) return {};
+  const row = table[Math.min(level || 1, 20) - 1] || [];
+  const result = {};
+  row.forEach((max, i) => { if (max > 0) result[i + 1] = max; });
+  return result;
+}
+
+const ORDINALS = ["1st","2nd","3rd","4th","5th","6th","7th","8th","9th"];
+
+const CONDITIONS = ["Blinded","Charmed","Deafened","Exhausted","Frightened","Grappled",
+  "Incapacitated","Invisible","Paralyzed","Petrified","Poisoned","Prone",
+  "Restrained","Stunned","Unconscious"];
+
+function calcAC(inventory, stats) {
+  const dex = Math.floor(((stats?.DEX || 10) - 10) / 2);
+  const names = (inventory || []).map(i => i.name.toLowerCase());
+  const hasShield = names.some(n => n.includes("shield"));
+  let base;
+  if (names.some(n => n.includes("chain mail"))) base = 16;
+  else if (names.some(n => n.includes("scale mail"))) base = 14 + Math.min(2, dex);
+  else if (names.some(n => n.includes("leather"))) base = 11 + dex;
+  else if (names.some(n => n.includes("studded"))) base = 12 + dex;
+  else base = 10 + dex;
+  return base + (hasShield ? 2 : 0);
+}
 
 const card  = "bg-gray-800 border border-gray-700 rounded-lg";
 const btn   = "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors cursor-pointer";
@@ -64,13 +101,13 @@ function writeSaves(saves) {
   localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
 }
 
-function saveCampaign({ id, character, messages, inventory, gold, currentHp, sessionCode, playerName }) {
+function saveCampaign({ id, character, messages, inventory, gold, currentHp, usedSlots, conditions, notes, deathSaves, sessionCode, playerName }) {
   const saves = loadSaves();
   const now = Date.now();
   const existing = saves.findIndex(s => s.id === id);
   const lastDmMsg = [...messages].reverse().find(m => m.role === "dm");
   const preview = lastDmMsg ? lastDmMsg.text.slice(0, 90) + (lastDmMsg.text.length > 90 ? "…" : "") : "";
-  const entry = { id, character, messages, inventory, gold, currentHp, sessionCode, playerName, savedAt: now, preview };
+  const entry = { id, character, messages, inventory, gold, currentHp, usedSlots, conditions, notes, deathSaves, sessionCode, playerName, savedAt: now, preview };
   if (existing >= 0) {
     saves[existing] = entry;
   } else {
@@ -403,6 +440,10 @@ export default function App() {
   const [campaignId, setCampaignId] = useState(null);
   const [justSaved, setJustSaved] = useState(false);
   const [currentHp, setCurrentHp] = useState(10);
+  const [usedSlots, setUsedSlots] = useState({});
+  const [conditions, setConditions] = useState([]);
+  const [notes, setNotes] = useState("");
+  const [deathSaves, setDeathSaves] = useState({ successes: 0, failures: 0 });
   const [newItemName, setNewItemName] = useState("");
   const [newItemType, setNewItemType] = useState("Misc");
   const chatRef = useRef(null);
@@ -432,12 +473,12 @@ export default function App() {
     };
   }, [userInput, messages, loading]);
 
-  // Auto-save whenever messages, inventory, gold, or HP change (only while in game)
+  // Auto-save whenever key state changes (only while in game)
   useEffect(() => {
     if (screen === "game" && character && campaignId) {
-      saveCampaign({ id: campaignId, character, messages, inventory, gold, currentHp, sessionCode, playerName });
+      saveCampaign({ id: campaignId, character, messages, inventory, gold, currentHp, usedSlots, conditions, notes, deathSaves, sessionCode, playerName });
     }
-  }, [messages, inventory, gold, currentHp]);
+  }, [messages, inventory, gold, currentHp, usedSlots, conditions, notes, deathSaves]);
 
   function triggerSaveFlash() {
     setJustSaved(true);
@@ -473,6 +514,10 @@ export default function App() {
     setGold(Math.floor(Math.random() * 15) + 5);
     setCampaignId(id);
     setMessages([makeMsg("dm", SAMPLE_CAMPAIGN)]);
+    setUsedSlots({});
+    setConditions([]);
+    setNotes("");
+    setDeathSaves({ successes: 0, failures: 0 });
     setScreen("game");
   }
 
@@ -487,6 +532,10 @@ export default function App() {
     setSessionCode(save.sessionCode || "");
     setPlayerName(save.playerName || "");
     setCampaignId(save.id);
+    setUsedSlots(save.usedSlots || {});
+    setConditions(save.conditions || []);
+    setNotes(save.notes || "");
+    setDeathSaves(save.deathSaves || { successes: 0, failures: 0 });
     setIsHost(true);
     setScreen("game");
   }
@@ -760,58 +809,140 @@ export default function App() {
       {activeTab === "combat" && <CombatTracker character={character} currentHp={currentHp} />}
 
       {/* Character Sheet Panel */}
-      {activeTab === "sheet" && character && (
-        <div className="bg-gray-800 border-t border-gray-700 px-4 py-3 flex-shrink-0">
-          {/* Name + Level */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">{CLASS_ICONS[character.class]}</span>
+      {activeTab === "sheet" && character && (() => {
+        const ac = calcAC(inventory, character.stats);
+        const slotMaxes = getSpellSlotMaxes(character.class, character.level || 1);
+        const isSpellcaster = SPELLCASTER_CLASSES.includes(character.class);
+        return (
+          <div className="bg-gray-800 border-t border-gray-700 flex-shrink-0" style={{ maxHeight: "320px", overflowY: "auto" }}>
+            <div className="px-4 py-3">
+              {/* Name + Level + AC */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{CLASS_ICONS[character.class]}</span>
+                  <div>
+                    <p className="font-semibold text-sm leading-none">{character.name}</p>
+                    <p className="text-gray-400 text-xs">{character.race} · {character.class}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-gray-700 text-gray-200 text-xs font-bold px-2 py-0.5 rounded" title="Armor Class">AC {ac}</span>
+                  <span className="text-gray-400 text-xs">Lvl</span>
+                  <button onClick={() => { setCharacter(c => ({ ...c, level: Math.max(1, (c.level||1) - 1) })); setUsedSlots(s => { const m = getSpellSlotMaxes(character.class, Math.max(1,(character.level||1)-1)); return Object.fromEntries(Object.entries(s).map(([k,v])=>[k,Math.min(v,m[k]||0)])); }); }} className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs cursor-pointer flex items-center justify-center">−</button>
+                  <span className="text-white font-bold w-5 text-center text-sm">{character.level || 1}</span>
+                  <button onClick={() => setCharacter(c => ({ ...c, level: Math.min(20, (c.level||1) + 1) }))} className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs cursor-pointer flex items-center justify-center">+</button>
+                </div>
+              </div>
+
+              {/* HP Bar */}
+              <div className="mb-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-400">HP</span>
+                  <span className={`text-xs font-bold ${currentHp === 0 ? "text-red-400 animate-pulse" : "text-white"}`}>{currentHp} / {character.hp}</span>
+                </div>
+                <div className="h-2 bg-gray-900 rounded-full overflow-hidden mb-2">
+                  <div className={`h-full rounded-full transition-all ${currentHp / character.hp > 0.5 ? "bg-green-500" : currentHp / character.hp > 0.25 ? "bg-yellow-500" : "bg-red-500"}`}
+                    style={{ width: `${Math.max(0, (currentHp / character.hp) * 100)}%` }} />
+                </div>
+                <div className="flex gap-1">
+                  {[1, 5, 10].map(n => (
+                    <button key={`d${n}`} onClick={() => setCurrentHp(h => Math.max(0, h - n))}
+                      className="flex-1 py-1 bg-red-900 hover:bg-red-700 text-red-300 rounded text-xs cursor-pointer transition-colors">−{n}</button>
+                  ))}
+                  <div className="w-px bg-gray-600 mx-0.5" />
+                  {[1, 5, 10].map(n => (
+                    <button key={`h${n}`} onClick={() => setCurrentHp(h => { const next = Math.min(character.hp, h + n); if (next > 0) setDeathSaves({ successes: 0, failures: 0 }); return next; })}
+                      className="flex-1 py-1 bg-green-900 hover:bg-green-700 text-green-300 rounded text-xs cursor-pointer transition-colors">+{n}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Death Saves — only at 0 HP */}
+              {currentHp === 0 && (
+                <div className="mb-3 bg-gray-900 rounded p-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-red-400 text-xs font-semibold">💀 Death Saves</span>
+                    <div className="flex gap-2 items-center">
+                      <button onClick={() => {
+                        const roll = rollDie(20);
+                        if (roll === 20) { setCurrentHp(1); setDeathSaves({ successes: 0, failures: 0 }); }
+                        else if (roll === 1) setDeathSaves(d => ({ ...d, failures: Math.min(3, d.failures + 2) }));
+                        else if (roll >= 10) setDeathSaves(d => ({ ...d, successes: Math.min(3, d.successes + 1) }));
+                        else setDeathSaves(d => ({ ...d, failures: Math.min(3, d.failures + 1) }));
+                      }} className="px-2 py-0.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs cursor-pointer">🎲 Roll</button>
+                      <button onClick={() => setDeathSaves({ successes: 0, failures: 0 })} className="text-gray-600 hover:text-gray-400 text-xs cursor-pointer">Reset</button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                      <span className="text-green-400 text-xs">✓</span>
+                      {[0,1,2].map(i => <div key={i} onClick={() => setDeathSaves(d => ({ ...d, successes: d.successes === i+1 ? i : i+1 }))} className={`w-4 h-4 rounded-full border cursor-pointer ${i < deathSaves.successes ? "bg-green-500 border-green-400" : "bg-gray-800 border-gray-600"}`} />)}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-red-400 text-xs">✗</span>
+                      {[0,1,2].map(i => <div key={i} onClick={() => setDeathSaves(d => ({ ...d, failures: d.failures === i+1 ? i : i+1 }))} className={`w-4 h-4 rounded-full border cursor-pointer ${i < deathSaves.failures ? "bg-red-500 border-red-400" : "bg-gray-800 border-gray-600"}`} />)}
+                    </div>
+                    {deathSaves.successes >= 3 && <span className="text-green-400 text-xs">Stable!</span>}
+                    {deathSaves.failures >= 3 && <span className="text-red-400 text-xs">Dead</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Stats */}
+              <div className="grid grid-cols-6 gap-1 mb-3">
+                {Object.entries(character.stats).map(([s, v]) => (
+                  <div key={s} className="bg-gray-900 rounded p-1.5 text-center">
+                    <p className="text-gray-500 text-xs">{s}</p>
+                    <p className="text-white font-bold">{v}</p>
+                    <p className="text-indigo-400 text-xs">{modifier(v)}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Spell Slots */}
+              {isSpellcaster && Object.keys(slotMaxes).length > 0 && (
+                <div className="mb-3">
+                  <p className="text-gray-400 text-xs mb-1.5 font-semibold">Spell Slots</p>
+                  <div className="space-y-1">
+                    {Object.entries(slotMaxes).map(([lvl, max]) => {
+                      const used = usedSlots[lvl] || 0;
+                      return (
+                        <div key={lvl} className="flex items-center gap-2">
+                          <span className="text-gray-500 text-xs w-6">{ORDINALS[lvl-1]}</span>
+                          <div className="flex gap-1">
+                            {Array.from({ length: max }).map((_, i) => (
+                              <button key={i} onClick={() => setUsedSlots(s => ({ ...s, [lvl]: s[lvl] === i+1 ? i : i+1 }))}
+                                className={`w-4 h-4 rounded-full border cursor-pointer transition-colors ${i < used ? "bg-indigo-500 border-indigo-400" : "bg-gray-900 border-gray-600 hover:border-indigo-500"}`} />
+                            ))}
+                          </div>
+                          <span className="text-gray-600 text-xs">{max - used}/{max}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button onClick={() => setUsedSlots({})} className="mt-1.5 text-xs text-gray-600 hover:text-gray-400 cursor-pointer">Long rest (restore all)</button>
+                </div>
+              )}
+
+              {/* Conditions */}
               <div>
-                <p className="font-semibold text-sm leading-none">{character.name}</p>
-                <p className="text-gray-400 text-xs">{character.race} · {character.class}</p>
+                <p className="text-gray-400 text-xs mb-1.5 font-semibold">Conditions</p>
+                <div className="flex flex-wrap gap-1">
+                  {CONDITIONS.map(c => {
+                    const active = conditions.includes(c);
+                    return (
+                      <button key={c} onClick={() => setConditions(cs => active ? cs.filter(x => x !== c) : [...cs, c])}
+                        className={`text-xs px-1.5 py-0.5 rounded border cursor-pointer transition-colors ${active ? "bg-red-900 border-red-700 text-red-300" : "bg-gray-900 border-gray-700 text-gray-500 hover:border-gray-500"}`}>
+                        {c}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="text-gray-400 text-xs mr-1">Lvl</span>
-              <button onClick={() => setCharacter(c => ({ ...c, level: Math.max(1, (c.level||1) - 1) }))} className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs cursor-pointer flex items-center justify-center">−</button>
-              <span className="text-white font-bold w-5 text-center text-sm">{character.level || 1}</span>
-              <button onClick={() => setCharacter(c => ({ ...c, level: Math.min(20, (c.level||1) + 1) }))} className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs cursor-pointer flex items-center justify-center">+</button>
-            </div>
           </div>
-          {/* HP Bar */}
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-gray-400">HP</span>
-              <span className="text-xs font-bold text-white">{currentHp} / {character.hp}</span>
-            </div>
-            <div className="h-2 bg-gray-900 rounded-full overflow-hidden mb-2">
-              <div className={`h-full rounded-full transition-all ${currentHp / character.hp > 0.5 ? "bg-green-500" : currentHp / character.hp > 0.25 ? "bg-yellow-500" : "bg-red-500"}`}
-                style={{ width: `${Math.max(0, (currentHp / character.hp) * 100)}%` }} />
-            </div>
-            <div className="flex gap-1">
-              {[1, 5, 10].map(n => (
-                <button key={`d${n}`} onClick={() => setCurrentHp(h => Math.max(0, h - n))}
-                  className="flex-1 py-1 bg-red-900 hover:bg-red-700 text-red-300 rounded text-xs cursor-pointer transition-colors">−{n}</button>
-              ))}
-              <div className="w-px bg-gray-600 mx-0.5" />
-              {[1, 5, 10].map(n => (
-                <button key={`h${n}`} onClick={() => setCurrentHp(h => Math.min(character.hp, h + n))}
-                  className="flex-1 py-1 bg-green-900 hover:bg-green-700 text-green-300 rounded text-xs cursor-pointer transition-colors">+{n}</button>
-              ))}
-            </div>
-          </div>
-          {/* Stats */}
-          <div className="grid grid-cols-6 gap-1">
-            {Object.entries(character.stats).map(([s, v]) => (
-              <div key={s} className="bg-gray-900 rounded p-1.5 text-center">
-                <p className="text-gray-500 text-xs">{s}</p>
-                <p className="text-white font-bold">{v}</p>
-                <p className="text-indigo-400 text-xs">{modifier(v)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Inventory Panel */}
       {activeTab === "inventory" && (
@@ -888,6 +1019,19 @@ export default function App() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Notes Panel */}
+      {activeTab === "notes" && (
+        <div className="bg-gray-800 border-t border-gray-700 flex-shrink-0" style={{ maxHeight: "260px" }}>
+          <textarea
+            className="w-full bg-gray-900 text-gray-100 text-sm p-3 resize-none focus:outline-none placeholder-gray-600"
+            style={{ height: "180px" }}
+            placeholder="Quest notes, NPC names, clues, loot to track…"
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+          />
         </div>
       )}
 
