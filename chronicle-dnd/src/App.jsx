@@ -160,8 +160,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [gold, setGold] = useState(10);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const chatRef = useRef(null);
   const mockIndex = useRef(0);
+  const inputRef = useRef(null);
+  const autoSendTimeout = useRef(null);
 
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -170,6 +173,26 @@ export default function App() {
   useEffect(() => {
     return () => window.speechSynthesis?.cancel();
   }, []);
+
+  useEffect(() => {
+    // Auto-send after player describes action following a roll
+    const lastMsg = messages[messages.length - 1];
+    const isLastMsgARoll = lastMsg?.isRoll;
+    
+    if (isLastMsgARoll && userInput.trim() && !loading) {
+      // Clear any pending timeout
+      if (autoSendTimeout.current) clearTimeout(autoSendTimeout.current);
+      
+      // Auto-send after 800ms of not typing
+      autoSendTimeout.current = setTimeout(() => {
+        sendMessage();
+      }, 800);
+    }
+    
+    return () => {
+      if (autoSendTimeout.current) clearTimeout(autoSendTimeout.current);
+    };
+  }, [userInput, messages, loading]);
 
   function createSession() {
     const code = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -222,20 +245,50 @@ export default function App() {
     setMessages(prev => [...prev, makeMsg("player", msg, { name: character?.name })]);
     setLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
-      const reply = MOCK_RESPONSES[mockIndex.current % MOCK_RESPONSES.length];
-      mockIndex.current++;
-      setMessages(prev => [...prev, makeMsg("dm", reply)]);
-      speakText(reply);
+      const filteredMessages = messages.concat(makeMsg("player", msg, { name: character?.name })).map(m => ({ role: m.role, text: m.text }));
+      const response = await fetch('http://localhost:3001/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: filteredMessages,
+          character: { name: character?.name, class: character?.class, race: character?.race }
+        })
+      });
+      if (!response.ok) throw new Error('API error');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let dmReply = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+            try {
+              const parsed = JSON.parse(data);
+              dmReply += parsed.text;
+            } catch (e) {
+              // ignore invalid JSON
+            }
+          }
+        }
+      }
+      setMessages(prev => [...prev, makeMsg("dm", dmReply)]);
+      speakText(dmReply);
     } finally {
       setLoading(false);
     }
   }
 
   function speakText(text) {
-    if (!window.speechSynthesis) return;
+    if (!window.speechSynthesis || !voiceEnabled) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Remove markdown formatting characters (asterisks, etc.)
+    const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 0.88; utterance.pitch = 0.75;
     const voices = window.speechSynthesis.getVoices();
     const deep = voices.find(v => v.name.toLowerCase().includes("daniel") || v.lang === "en-GB");
@@ -475,13 +528,16 @@ export default function App() {
       {/* Input */}
       <div className="p-4 bg-gray-800 border-t border-gray-700 flex-shrink-0">
         <div className="flex gap-2 mb-2">
-          <input className={inp + " flex-1"} placeholder="What do you do?" value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} />
+          <input ref={inputRef} className={inp + " flex-1"} placeholder="What do you do?" value={userInput} onChange={e => setUserInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} />
           <button className={btn} onClick={sendMessage} disabled={loading}>{loading ? "⏳" : "Send"}</button>
         </div>
         <div className="flex gap-2 flex-wrap">
           {QUICK_ACTIONS.map(a => (
             <button key={a} onClick={() => setUserInput(a)} className="text-xs text-gray-400 border border-gray-700 rounded px-2 py-1 hover:border-gray-500 hover:text-white cursor-pointer transition-colors">{a}</button>
           ))}
+        </div>
+        <div className="flex justify-end mt-2">
+          <button onClick={() => setVoiceEnabled(!voiceEnabled)} className={btnSm}>{voiceEnabled ? "🔊 Voice On" : "🔇 Voice Off"}</button>
         </div>
       </div>
     </div>

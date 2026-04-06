@@ -1,8 +1,10 @@
 import "dotenv/config";
 import express from "express";
+import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -18,7 +20,7 @@ app.post("/api/chat", async (req, res) => {
 Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${character.class || ""}`.trim();
 
   const apiMessages = messages
-    .filter((m) => m.role === "player" && !m.isRoll)
+    .filter((m) => m.role === "player")
     .map((m) => ({ role: "user", content: m.text }));
 
   // Need at least one message
