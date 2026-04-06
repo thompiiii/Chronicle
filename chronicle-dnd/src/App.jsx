@@ -573,7 +573,7 @@ export default function App() {
           character: { name: character?.name, class: character?.class, race: character?.race }
         })
       });
-      if (!response.ok) throw new Error('API error');
+      if (!response.ok) throw new Error(`Server error ${response.status}`);
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let dmReply = '';
@@ -588,16 +588,25 @@ export default function App() {
             if (data === '[DONE]') break;
             try {
               const parsed = JSON.parse(data);
-              dmReply += parsed.text;
+              if (parsed.error) throw new Error(parsed.error);
+              if (parsed.text) dmReply += parsed.text;
             } catch (e) {
-              // ignore invalid JSON
+              if (e.message && e.message !== 'Unexpected end of JSON input') {
+                setMessages(prev => [...prev, makeMsg("dm", `⚠️ ${e.message}`)]);
+                setLoading(false);
+                return;
+              }
             }
           }
         }
       }
-      setMessages(prev => [...prev, makeMsg("dm", dmReply)]);
-      speakText(dmReply);
-      triggerSaveFlash();
+      if (dmReply) {
+        setMessages(prev => [...prev, makeMsg("dm", dmReply)]);
+        speakText(dmReply);
+        triggerSaveFlash();
+      }
+    } catch (err) {
+      setMessages(prev => [...prev, makeMsg("dm", `⚠️ ${err.message}`)]);
     } finally {
       setLoading(false);
     }
