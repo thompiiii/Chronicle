@@ -43,11 +43,49 @@ const TAB_BUTTONS = [
   { id: "inventory", label: "🎒 Bag" },
 ];
 
-// Tailwind class constants — module-level so they're not recreated each render
 const card  = "bg-gray-800 border border-gray-700 rounded-lg";
 const btn   = "px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors cursor-pointer";
 const btnSm = "px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors cursor-pointer";
 const inp   = "bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 w-full";
+
+// ── Campaign Save/Load Helpers ─────────────────────────────────────────────
+const SAVES_KEY = "chronicle_saves";
+
+function loadSaves() {
+  try {
+    return JSON.parse(localStorage.getItem(SAVES_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeSaves(saves) {
+  localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
+}
+
+function saveCampaign({ id, character, messages, inventory, gold, sessionCode, playerName }) {
+  const saves = loadSaves();
+  const now = Date.now();
+  const existing = saves.findIndex(s => s.id === id);
+  const lastDmMsg = [...messages].reverse().find(m => m.role === "dm");
+  const preview = lastDmMsg ? lastDmMsg.text.slice(0, 90) + (lastDmMsg.text.length > 90 ? "…" : "") : "";
+  const entry = { id, character, messages, inventory, gold, sessionCode, playerName, savedAt: now, preview };
+  if (existing >= 0) {
+    saves[existing] = entry;
+  } else {
+    saves.unshift(entry);
+  }
+  writeSaves(saves);
+}
+
+function deleteSave(id) {
+  writeSaves(loadSaves().filter(s => s.id !== id));
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
 
 function rollDie(sides) { return Math.floor(Math.random() * sides) + 1; }
 
@@ -56,7 +94,6 @@ function modifier(score) {
   return m >= 0 ? `+${m}` : `${m}`;
 }
 
-// Formats a signed integer for display: 0 → "+0", -2 → "-2", 3 → "+3"
 function fmtSign(n) { return n >= 0 ? `+${n}` : `${n}`; }
 
 function getStartingInventory(charClass) {
@@ -101,7 +138,6 @@ function DiceRoller({ onRollToChat }) {
 
   return (
     <div className="bg-gray-800 border-b border-gray-700 px-4 py-3 flex-shrink-0">
-      {/* Count + Modifier */}
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-2">
           <span className="text-gray-400 text-xs">Dice</span>
@@ -125,8 +161,6 @@ function DiceRoller({ onRollToChat }) {
         )}
         {rolling && <div className="ml-auto text-2xl animate-spin">🎲</div>}
       </div>
-
-      {/* Dice Buttons */}
       <div className="grid grid-cols-7 gap-1">
         {DICE.map(d => (
           <button key={d.sides} onClick={() => roll(d.sides)}
@@ -135,6 +169,68 @@ function DiceRoller({ onRollToChat }) {
             <span>{d.label}</span>
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Saved Campaigns Screen ─────────────────────────────────────────────────
+function SavedCampaignsScreen({ onBack, onContinue }) {
+  const [saves, setSaves] = useState(loadSaves);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  function handleDelete(id) {
+    deleteSave(id);
+    setSaves(loadSaves());
+    setConfirmDelete(null);
+  }
+
+  if (saves.length === 0) return (
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
+      <div className="text-5xl mb-4">📜</div>
+      <h2 className="text-xl font-bold mb-2">No saved campaigns</h2>
+      <p className="text-gray-400 text-sm mb-6">Start a new campaign and your progress will be saved automatically.</p>
+      <button className={btn} onClick={onBack}>← Back</button>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      <div className="max-w-lg mx-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <button onClick={onBack} className="text-gray-400 hover:text-white transition-colors cursor-pointer text-lg">←</button>
+          <h2 className="text-2xl font-bold">Saved Campaigns</h2>
+        </div>
+        <div className="space-y-3">
+          {saves.map(save => (
+            <div key={save.id} className={card + " p-4"}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-2xl flex-shrink-0">{CLASS_ICONS[save.character?.class] || "🧙"}</span>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-white truncate">{save.character?.name}</p>
+                    <p className="text-gray-400 text-xs">{save.character?.race} · {save.character?.class} · {save.messages?.length || 0} messages</p>
+                    <p className="text-gray-500 text-xs mt-0.5">Saved {formatDate(save.savedAt)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <button onClick={() => onContinue(save)} className={btn + " text-sm py-1.5 px-3"}>Continue</button>
+                  {confirmDelete === save.id ? (
+                    <div className="flex gap-1">
+                      <button onClick={() => handleDelete(save.id)} className="px-2 py-1.5 bg-red-700 hover:bg-red-600 text-white rounded text-xs cursor-pointer">Delete</button>
+                      <button onClick={() => setConfirmDelete(null)} className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs cursor-pointer">Cancel</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmDelete(save.id)} className="px-2 py-1.5 bg-gray-700 hover:bg-gray-600 text-red-400 rounded text-xs cursor-pointer">🗑</button>
+                  )}
+                </div>
+              </div>
+              {save.preview && (
+                <p className="text-gray-500 text-xs mt-3 border-t border-gray-700 pt-2 italic leading-relaxed">"{save.preview}"</p>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -161,6 +257,8 @@ export default function App() {
   const [inventory, setInventory] = useState([]);
   const [gold, setGold] = useState(10);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [campaignId, setCampaignId] = useState(null);
+  const [justSaved, setJustSaved] = useState(false);
   const chatRef = useRef(null);
   const mockIndex = useRef(0);
   const inputRef = useRef(null);
@@ -175,24 +273,30 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Auto-send after player describes action following a roll
     const lastMsg = messages[messages.length - 1];
     const isLastMsgARoll = lastMsg?.isRoll;
-    
     if (isLastMsgARoll && userInput.trim() && !loading) {
-      // Clear any pending timeout
       if (autoSendTimeout.current) clearTimeout(autoSendTimeout.current);
-      
-      // Auto-send after 800ms of not typing
       autoSendTimeout.current = setTimeout(() => {
         sendMessage();
       }, 800);
     }
-    
     return () => {
       if (autoSendTimeout.current) clearTimeout(autoSendTimeout.current);
     };
   }, [userInput, messages, loading]);
+
+  // Auto-save whenever messages, inventory, or gold change (only while in game)
+  useEffect(() => {
+    if (screen === "game" && character && campaignId) {
+      saveCampaign({ id: campaignId, character, messages, inventory, gold, sessionCode, playerName });
+    }
+  }, [messages, inventory, gold]);
+
+  function triggerSaveFlash() {
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 2000);
+  }
 
   function createSession() {
     const code = Math.random().toString(36).substring(2, 7).toUpperCase();
@@ -215,9 +319,25 @@ export default function App() {
 
   function enterGame() {
     const char = { name: charName || `${charRace} ${charClass}`, class: charClass, race: charRace, stats, hp: 10 + Math.floor((stats.CON - 10) / 2) };
+    const id = Math.random().toString(36).substring(2, 12);
     setCharacter(char);
     setInventory(getStartingInventory(charClass));
     setGold(Math.floor(Math.random() * 15) + 5);
+    setCampaignId(id);
+    setMessages([makeMsg("dm", SAMPLE_CAMPAIGN)]);
+    setScreen("game");
+  }
+
+  function continueGame(save) {
+    msgIdCounter = Math.max(msgIdCounter, ...save.messages.map(m => m.id + 1));
+    setCharacter(save.character);
+    setMessages(save.messages);
+    setInventory(save.inventory);
+    setGold(save.gold);
+    setSessionCode(save.sessionCode || "");
+    setPlayerName(save.playerName || "");
+    setCampaignId(save.id);
+    setIsHost(true);
     setScreen("game");
   }
 
@@ -278,6 +398,7 @@ export default function App() {
       }
       setMessages(prev => [...prev, makeMsg("dm", dmReply)]);
       speakText(dmReply);
+      triggerSaveFlash();
     } finally {
       setLoading(false);
     }
@@ -286,7 +407,6 @@ export default function App() {
   function speakText(text) {
     if (!window.speechSynthesis || !voiceEnabled) return;
     window.speechSynthesis.cancel();
-    // Remove markdown formatting characters (asterisks, etc.)
     const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.rate = 0.88; utterance.pitch = 0.75;
@@ -298,29 +418,47 @@ export default function App() {
     window.speechSynthesis.speak(utterance);
   }
 
-  if (screen === "home") return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
-      <div className="text-center mb-10">
-        <div className="text-5xl mb-3">⚔️</div>
-        <h1 className="text-4xl font-bold mb-1">Chronicle</h1>
-        <p className="text-gray-400">AI Dungeon Master · D&D 5e</p>
-      </div>
-      <div className="w-full max-w-sm space-y-4">
-        <div className={card + " p-4"}>
-          <label className="block text-sm text-gray-400 mb-1">Your name</label>
-          <input className={inp} placeholder="Enter your name…" value={playerName} onChange={e => setPlayerName(e.target.value)} />
+  if (screen === "saves") return (
+    <SavedCampaignsScreen
+      onBack={() => setScreen("home")}
+      onContinue={save => { continueGame(save); }}
+    />
+  );
+
+  if (screen === "home") {
+    const hasSaves = loadSaves().length > 0;
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-6">
+        <div className="text-center mb-10">
+          <div className="text-5xl mb-3">⚔️</div>
+          <h1 className="text-4xl font-bold mb-1">Chronicle</h1>
+          <p className="text-gray-400">AI Dungeon Master · D&D 5e</p>
         </div>
-        <button className={`${btn} w-full py-3`} onClick={createSession}>🏰 Create Campaign (Host)</button>
-        <div className={card + " p-4"}>
-          <label className="block text-sm text-gray-400 mb-2">Join with session code</label>
-          <div className="flex gap-2">
-            <input className={inp} placeholder="XXXXX" value={inputCode} onChange={e => setInputCode(e.target.value)} maxLength={6} style={{ textTransform: "uppercase", letterSpacing: "0.2em" }} />
-            <button className={btn} onClick={joinSession}>Join</button>
+        <div className="w-full max-w-sm space-y-4">
+          <div className={card + " p-4"}>
+            <label className="block text-sm text-gray-400 mb-1">Your name</label>
+            <input className={inp} placeholder="Enter your name…" value={playerName} onChange={e => setPlayerName(e.target.value)} />
+          </div>
+          <button className={`${btn} w-full py-3`} onClick={createSession}>🏰 New Campaign</button>
+          {hasSaves && (
+            <button
+              className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 hover:border-gray-500 text-white rounded-lg font-semibold transition-colors cursor-pointer"
+              onClick={() => setScreen("saves")}
+            >
+              📜 Continue Campaign
+            </button>
+          )}
+          <div className={card + " p-4"}>
+            <label className="block text-sm text-gray-400 mb-2">Join with session code</label>
+            <div className="flex gap-2">
+              <input className={inp} placeholder="XXXXX" value={inputCode} onChange={e => setInputCode(e.target.value)} maxLength={6} style={{ textTransform: "uppercase", letterSpacing: "0.2em" }} />
+              <button className={btn} onClick={joinSession}>Join</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   if (screen === "create-session") return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -407,12 +545,17 @@ export default function App() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setScreen("home")}
+            className="text-gray-400 hover:text-white transition-colors cursor-pointer mr-1 text-lg leading-none"
+            title="Back to home"
+          >←</button>
           <span className="text-lg">⚔️</span>
           <div>
             <p className="font-semibold text-sm leading-none">
               Chronicle
               {speaking && <span className="ml-2 text-xs text-indigo-400 animate-pulse">● Speaking</span>}
-              <span className="ml-2 text-xs text-yellow-500">· Demo</span>
+              {justSaved && <span className="ml-2 text-xs text-green-400 animate-pulse">✓ Saved</span>}
             </p>
             <p className="text-gray-500 text-xs">{sessionCode}</p>
           </div>
