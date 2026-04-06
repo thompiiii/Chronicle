@@ -7,7 +7,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const apiKey = process.env.ANTHROPIC_API_KEY;
+console.log(`API key loaded: ${apiKey ? apiKey.slice(0, 20) + "..." : "MISSING"}`);
+const client = new Anthropic({ apiKey });
 
 // POST /api/chat
 // Body: { messages: [{ role, text }], character: { name, class, race } }
@@ -34,7 +36,7 @@ Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${c
 
   try {
     const stream = client.messages.stream({
-      model: "claude-opus-4-6",
+      model: "claude-sonnet-4-6",
       max_tokens: 512,
       system: systemPrompt,
       messages: apiMessages,
