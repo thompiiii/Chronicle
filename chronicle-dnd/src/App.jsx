@@ -41,6 +41,7 @@ const TAB_BUTTONS = [
   { id: "dice",      label: "🎲 Dice" },
   { id: "sheet",     label: "📜 Sheet" },
   { id: "inventory", label: "🎒 Bag" },
+  { id: "combat",    label: "⚔️ Fight" },
 ];
 
 const card  = "bg-gray-800 border border-gray-700 rounded-lg";
@@ -183,6 +184,134 @@ function DiceRoller({ onRollToChat }) {
             <span>{d.label}</span>
           </button>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Combat Tracker ────────────────────────────────────────────────────────
+function CombatTracker({ character, currentHp }) {
+  const [combatants, setCombatants] = useState(() =>
+    character ? [{ id: "player", name: character.name, initiative: 0, hp: currentHp, maxHp: character.hp, isPlayer: true }] : []
+  );
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [round, setRound] = useState(1);
+  const [newName, setNewName] = useState("");
+  const [newInit, setNewInit] = useState("");
+  const [started, setStarted] = useState(false);
+
+  const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
+  const activeCombatant = sorted[currentIdx];
+
+  function addCombatant() {
+    const name = newName.trim();
+    if (!name) return;
+    const init = newInit !== "" ? Number(newInit) : Math.floor(Math.random() * 20) + 1;
+    setCombatants(prev => [...prev, { id: Date.now(), name, initiative: init, hp: null, maxHp: null, isPlayer: false }]);
+    setNewName("");
+    setNewInit("");
+  }
+
+  function rollPlayerInit() {
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const dexMod = character ? Math.floor((character.stats.DEX - 10) / 2) : 0;
+    setCombatants(prev => prev.map(c => c.isPlayer ? { ...c, initiative: roll + dexMod } : c));
+  }
+
+  function remove(id) {
+    const newList = combatants.filter(c => c.id !== id);
+    setCombatants(newList);
+    setCurrentIdx(0);
+  }
+
+  function nextTurn() {
+    const next = (currentIdx + 1) % sorted.length;
+    if (next === 0) setRound(r => r + 1);
+    setCurrentIdx(next);
+  }
+
+  function resetCombat() {
+    setCurrentIdx(0);
+    setRound(1);
+    setStarted(false);
+    setCombatants(character
+      ? [{ id: "player", name: character.name, initiative: 0, hp: currentHp, maxHp: character.hp, isPlayer: true }]
+      : []
+    );
+  }
+
+  return (
+    <div className="bg-gray-800 border-t border-gray-700 flex-shrink-0" style={{ maxHeight: "260px", overflowY: "auto" }}>
+      <div className="px-4 py-3">
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-white text-sm font-semibold">⚔️ Combat</span>
+            {started && <span className="text-gray-400 text-xs">Round {round}</span>}
+          </div>
+          <div className="flex gap-1">
+            {!started ? (
+              <button onClick={() => setStarted(true)} disabled={combatants.length < 2}
+                className="px-2 py-1 bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded text-xs cursor-pointer transition-colors">
+                Start
+              </button>
+            ) : (
+              <button onClick={nextTurn}
+                className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs cursor-pointer transition-colors">
+                Next →
+              </button>
+            )}
+            <button onClick={resetCombat}
+              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded text-xs cursor-pointer transition-colors">
+              Reset
+            </button>
+          </div>
+        </div>
+
+        {/* Combatant list */}
+        <div className="space-y-1 mb-2">
+          {(started ? sorted : combatants).map((c, i) => {
+            const isActive = started && sorted[currentIdx]?.id === c.id;
+            return (
+              <div key={c.id} className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors ${isActive ? "bg-indigo-900 border border-indigo-600" : "bg-gray-900"}`}>
+                <span className="w-3 text-center text-indigo-400">{isActive ? "▶" : ""}</span>
+                <span className={`flex-1 truncate font-medium ${c.isPlayer ? "text-indigo-300" : "text-white"}`}>{c.name}{c.isPlayer ? " (you)" : ""}</span>
+                <div className="flex items-center gap-1">
+                  {c.isPlayer ? (
+                    <button onClick={rollPlayerInit} title="Roll initiative"
+                      className="text-gray-400 hover:text-white cursor-pointer px-1">🎲</button>
+                  ) : null}
+                  <span className="text-gray-400 w-14 text-right">Init: <span className="text-white font-bold">{c.initiative}</span></span>
+                </div>
+                <button onClick={() => remove(c.id)} className="text-gray-600 hover:text-red-400 cursor-pointer ml-1">✕</button>
+              </div>
+            );
+          })}
+          {combatants.length === 0 && <p className="text-gray-600 text-xs text-center py-1">Add combatants below</p>}
+        </div>
+
+        {/* Add combatant form */}
+        <div className="flex gap-1 pt-2 border-t border-gray-700">
+          <input
+            className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-indigo-500 flex-1"
+            placeholder="Enemy name…"
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addCombatant()}
+          />
+          <input
+            className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-indigo-500 w-14 text-center"
+            placeholder="Init"
+            type="number"
+            value={newInit}
+            onChange={e => setNewInit(e.target.value)}
+          />
+          <button onClick={addCombatant}
+            className="px-2 py-1 bg-indigo-700 hover:bg-indigo-600 text-white rounded text-xs cursor-pointer transition-colors">
+            Add
+          </button>
+        </div>
+        <p className="text-gray-600 text-xs mt-1">Leave Init blank to roll d20 automatically.</p>
       </div>
     </div>
   );
@@ -626,6 +755,9 @@ export default function App() {
 
       {/* Dice Panel */}
       {activeTab === "dice" && <DiceRoller onRollToChat={handleRollToChat} />}
+
+      {/* Combat Tracker Panel */}
+      {activeTab === "combat" && <CombatTracker character={character} currentHp={currentHp} />}
 
       {/* Character Sheet Panel */}
       {activeTab === "sheet" && character && (
