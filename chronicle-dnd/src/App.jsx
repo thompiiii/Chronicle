@@ -63,13 +63,13 @@ function writeSaves(saves) {
   localStorage.setItem(SAVES_KEY, JSON.stringify(saves));
 }
 
-function saveCampaign({ id, character, messages, inventory, gold, sessionCode, playerName }) {
+function saveCampaign({ id, character, messages, inventory, gold, currentHp, sessionCode, playerName }) {
   const saves = loadSaves();
   const now = Date.now();
   const existing = saves.findIndex(s => s.id === id);
   const lastDmMsg = [...messages].reverse().find(m => m.role === "dm");
   const preview = lastDmMsg ? lastDmMsg.text.slice(0, 90) + (lastDmMsg.text.length > 90 ? "…" : "") : "";
-  const entry = { id, character, messages, inventory, gold, sessionCode, playerName, savedAt: now, preview };
+  const entry = { id, character, messages, inventory, gold, currentHp, sessionCode, playerName, savedAt: now, preview };
   if (existing >= 0) {
     saves[existing] = entry;
   } else {
@@ -113,6 +113,20 @@ function generateStats() {
 let msgIdCounter = 1;
 function makeMsg(role, text, extra = {}) {
   return { id: msgIdCounter++, role, text, ...extra };
+}
+
+function renderMarkdown(text) {
+  return text.split("\n\n").map((para, i) => (
+    <p key={i} className="mb-2 last:mb-0">
+      {para.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((chunk, j) => {
+        if (chunk.startsWith("**") && chunk.endsWith("**"))
+          return <strong key={j} className="text-white font-semibold">{chunk.slice(2, -2)}</strong>;
+        if (chunk.startsWith("*") && chunk.endsWith("*"))
+          return <em key={j} className="text-gray-200 italic">{chunk.slice(1, -1)}</em>;
+        return chunk;
+      })}
+    </p>
+  ));
 }
 
 // ── Dice Roller Panel ──────────────────────────────────────────────────────
@@ -259,6 +273,9 @@ export default function App() {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [campaignId, setCampaignId] = useState(null);
   const [justSaved, setJustSaved] = useState(false);
+  const [currentHp, setCurrentHp] = useState(10);
+  const [newItemName, setNewItemName] = useState("");
+  const [newItemType, setNewItemType] = useState("Misc");
   const chatRef = useRef(null);
   const mockIndex = useRef(0);
   const inputRef = useRef(null);
@@ -286,12 +303,12 @@ export default function App() {
     };
   }, [userInput, messages, loading]);
 
-  // Auto-save whenever messages, inventory, or gold change (only while in game)
+  // Auto-save whenever messages, inventory, gold, or HP change (only while in game)
   useEffect(() => {
     if (screen === "game" && character && campaignId) {
-      saveCampaign({ id: campaignId, character, messages, inventory, gold, sessionCode, playerName });
+      saveCampaign({ id: campaignId, character, messages, inventory, gold, currentHp, sessionCode, playerName });
     }
-  }, [messages, inventory, gold]);
+  }, [messages, inventory, gold, currentHp]);
 
   function triggerSaveFlash() {
     setJustSaved(true);
@@ -318,9 +335,11 @@ export default function App() {
   }
 
   function enterGame() {
-    const char = { name: charName || `${charRace} ${charClass}`, class: charClass, race: charRace, stats, hp: 10 + Math.floor((stats.CON - 10) / 2) };
+    const maxHp = 10 + Math.floor((stats.CON - 10) / 2);
+    const char = { name: charName || `${charRace} ${charClass}`, class: charClass, race: charRace, stats, hp: maxHp, level: 1 };
     const id = Math.random().toString(36).substring(2, 12);
     setCharacter(char);
+    setCurrentHp(maxHp);
     setInventory(getStartingInventory(charClass));
     setGold(Math.floor(Math.random() * 15) + 5);
     setCampaignId(id);
@@ -330,7 +349,9 @@ export default function App() {
 
   function continueGame(save) {
     msgIdCounter = Math.max(msgIdCounter, ...save.messages.map(m => m.id + 1));
-    setCharacter(save.character);
+    const char = { level: 1, ...save.character };
+    setCharacter(char);
+    setCurrentHp(save.currentHp ?? char.hp ?? 10);
     setMessages(save.messages);
     setInventory(save.inventory);
     setGold(save.gold);
@@ -584,7 +605,9 @@ export default function App() {
               <p className={`text-xs mb-1 font-semibold ${m.role === "dm" ? "text-indigo-400" : m.isRoll ? "text-yellow-400" : "text-indigo-300"}`}>
                 {m.role === "dm" ? "Dungeon Master" : (m.name || "You")}
               </p>
-              <p className="text-sm leading-relaxed text-gray-100">{m.text}</p>
+              <div className="text-sm leading-relaxed text-gray-100">
+                {m.role === "dm" ? renderMarkdown(m.text) : m.text}
+              </div>
             </div>
           </div>
         ))}
@@ -607,13 +630,45 @@ export default function App() {
       {/* Character Sheet Panel */}
       {activeTab === "sheet" && character && (
         <div className="bg-gray-800 border-t border-gray-700 px-4 py-3 flex-shrink-0">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">{CLASS_ICONS[character.class]}</span>
-            <div>
-              <p className="font-semibold">{character.name}</p>
-              <p className="text-gray-400 text-xs">{character.race} · {character.class} · HP: {character.hp}</p>
+          {/* Name + Level */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">{CLASS_ICONS[character.class]}</span>
+              <div>
+                <p className="font-semibold text-sm leading-none">{character.name}</p>
+                <p className="text-gray-400 text-xs">{character.race} · {character.class}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-gray-400 text-xs mr-1">Lvl</span>
+              <button onClick={() => setCharacter(c => ({ ...c, level: Math.max(1, (c.level||1) - 1) }))} className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs cursor-pointer flex items-center justify-center">−</button>
+              <span className="text-white font-bold w-5 text-center text-sm">{character.level || 1}</span>
+              <button onClick={() => setCharacter(c => ({ ...c, level: Math.min(20, (c.level||1) + 1) }))} className="w-5 h-5 bg-gray-700 hover:bg-gray-600 rounded text-white text-xs cursor-pointer flex items-center justify-center">+</button>
             </div>
           </div>
+          {/* HP Bar */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs text-gray-400">HP</span>
+              <span className="text-xs font-bold text-white">{currentHp} / {character.hp}</span>
+            </div>
+            <div className="h-2 bg-gray-900 rounded-full overflow-hidden mb-2">
+              <div className={`h-full rounded-full transition-all ${currentHp / character.hp > 0.5 ? "bg-green-500" : currentHp / character.hp > 0.25 ? "bg-yellow-500" : "bg-red-500"}`}
+                style={{ width: `${Math.max(0, (currentHp / character.hp) * 100)}%` }} />
+            </div>
+            <div className="flex gap-1">
+              {[1, 5, 10].map(n => (
+                <button key={`d${n}`} onClick={() => setCurrentHp(h => Math.max(0, h - n))}
+                  className="flex-1 py-1 bg-red-900 hover:bg-red-700 text-red-300 rounded text-xs cursor-pointer transition-colors">−{n}</button>
+              ))}
+              <div className="w-px bg-gray-600 mx-0.5" />
+              {[1, 5, 10].map(n => (
+                <button key={`h${n}`} onClick={() => setCurrentHp(h => Math.min(character.hp, h + n))}
+                  className="flex-1 py-1 bg-green-900 hover:bg-green-700 text-green-300 rounded text-xs cursor-pointer transition-colors">+{n}</button>
+              ))}
+            </div>
+          </div>
+          {/* Stats */}
           <div className="grid grid-cols-6 gap-1">
             {Object.entries(character.stats).map(([s, v]) => (
               <div key={s} className="bg-gray-900 rounded p-1.5 text-center">
@@ -628,11 +683,19 @@ export default function App() {
 
       {/* Inventory Panel */}
       {activeTab === "inventory" && (
-        <div className="bg-gray-800 border-t border-gray-700 flex-shrink-0" style={{ maxHeight: "240px", overflowY: "auto" }}>
+        <div className="bg-gray-800 border-t border-gray-700 flex-shrink-0" style={{ maxHeight: "260px", overflowY: "auto" }}>
           <div className="px-4 py-3">
             <div className="flex items-center justify-between mb-3">
               <p className="font-semibold text-sm">Inventory</p>
-              <span className="text-yellow-400 text-sm font-semibold">🪙 {gold} gp</span>
+              <div className="flex items-center gap-1">
+                {[-10,-1,1,10].map(n => (
+                  <button key={n} onClick={() => setGold(g => Math.max(0, g + n))}
+                    className={`px-1.5 py-0.5 rounded text-xs cursor-pointer transition-colors ${n < 0 ? "bg-gray-700 hover:bg-gray-600 text-gray-300" : "bg-yellow-800 hover:bg-yellow-700 text-yellow-300"}`}>
+                    {n > 0 ? `+${n}` : n}
+                  </button>
+                ))}
+                <span className="text-yellow-400 text-sm font-semibold ml-1">🪙 {gold}</span>
+              </div>
             </div>
             {inventory.length === 0 && <p className="text-gray-500 text-sm text-center py-2">Your pack is empty.</p>}
             <div className="space-y-1">
@@ -663,6 +726,34 @@ export default function App() {
             <div className="mt-2 pt-2 border-t border-gray-700 flex justify-between text-xs text-gray-500">
               <span>{inventory.length} items</span>
               <span>{inventory.reduce((a, i) => a + i.weight * i.qty, 0).toFixed(1)} lb total</span>
+            </div>
+            {/* Add item */}
+            <div className="mt-2 pt-2 border-t border-gray-700 flex gap-1">
+              <input
+                className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-white placeholder-gray-600 text-xs focus:outline-none focus:border-indigo-500 flex-1"
+                placeholder="Add item…"
+                value={newItemName}
+                onChange={e => setNewItemName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && newItemName.trim()) {
+                    setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
+                    setNewItemName("");
+                  }
+                }}
+              />
+              <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
+                className="bg-gray-900 border border-gray-600 rounded px-1 py-1 text-white text-xs focus:outline-none focus:border-indigo-500 cursor-pointer">
+                {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
+              </select>
+              <button
+                onClick={() => {
+                  if (!newItemName.trim()) return;
+                  setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
+                  setNewItemName("");
+                }}
+                className="px-2 py-1 bg-indigo-700 hover:bg-indigo-600 text-white rounded text-xs cursor-pointer transition-colors">
+                Add
+              </button>
             </div>
           </div>
         </div>
