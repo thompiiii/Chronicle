@@ -52,3 +52,12 @@ externalPort = 3001
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 5001
+externalPort = 3002
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["bash", "-c", "node server/index.js & cd chronicle-dnd && npx vite preview --host 0.0.0.0 --port 5000"]
+build = ["bash", "-c", "cd chronicle-dnd && npm install && npm run build && cd ../server && npm install"]
