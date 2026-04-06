@@ -161,7 +161,6 @@ export default function App() {
   const [inventory, setInventory] = useState([]);
   const [gold, setGold] = useState(10);
   const chatRef = useRef(null);
-  const mockIndex = useRef(0);
 
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -219,14 +218,47 @@ export default function App() {
     if (!userInput.trim() || loading) return;
     const msg = userInput.trim();
     setUserInput("");
-    setMessages(prev => [...prev, makeMsg("player", msg, { name: character?.name })]);
+    const nextMessages = [...messages, makeMsg("player", msg, { name: character?.name })];
+    setMessages(nextMessages);
     setLoading(true);
+
+    const dmMsgId = msgIdCounter++;
+    setMessages(prev => [...prev, { id: dmMsgId, role: "dm", text: "" }]);
+
     try {
-      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
-      const reply = MOCK_RESPONSES[mockIndex.current % MOCK_RESPONSES.length];
-      mockIndex.current++;
-      setMessages(prev => [...prev, makeMsg("dm", reply)]);
-      speakText(reply);
+      const res = await fetch("http://localhost:3001/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: nextMessages, character }),
+      });
+
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const line of decoder.decode(value).split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") break;
+          try {
+            const { text, error } = JSON.parse(payload);
+            if (error) throw new Error(error);
+            fullText += text;
+            setMessages(prev => prev.map(m => m.id === dmMsgId ? { ...m, text: fullText } : m));
+          } catch {}
+        }
+      }
+
+      speakText(fullText);
+    } catch (err) {
+      setMessages(prev => prev.map(m =>
+        m.id === dmMsgId ? { ...m, text: `⚠️ ${err.message}` } : m
+      ));
     } finally {
       setLoading(false);
     }
@@ -359,7 +391,6 @@ export default function App() {
             <p className="font-semibold text-sm leading-none">
               Chronicle
               {speaking && <span className="ml-2 text-xs text-indigo-400 animate-pulse">● Speaking</span>}
-              <span className="ml-2 text-xs text-yellow-500">· Demo</span>
             </p>
             <p className="text-gray-500 text-xs">{sessionCode}</p>
           </div>
