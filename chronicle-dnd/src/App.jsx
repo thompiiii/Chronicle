@@ -575,12 +575,38 @@ export default function App() {
         </div>
       </div>
 
+      {/* Chat */}
+      <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+        {messages.map(m => (
+          <div key={m.id} className={`flex gap-3 ${m.role === "player" ? "flex-row-reverse" : ""}`}>
+            <div className="text-xl flex-shrink-0 mt-1">{m.role === "dm" ? "🎲" : CLASS_ICONS[character?.class] || "🧙"}</div>
+            <div className={`max-w-sm rounded-lg p-3 ${m.isRoll ? "bg-gray-700 border border-gray-600" : m.role === "dm" ? "bg-gray-800 border border-gray-700" : "bg-indigo-900 border border-indigo-700"}`}>
+              <p className={`text-xs mb-1 font-semibold ${m.role === "dm" ? "text-indigo-400" : m.isRoll ? "text-yellow-400" : "text-indigo-300"}`}>
+                {m.role === "dm" ? "Dungeon Master" : (m.name || "You")}
+              </p>
+              <p className="text-sm leading-relaxed text-gray-100">{m.text}</p>
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex gap-3">
+            <div className="text-xl">🎲</div>
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
+              <p className="text-xs text-indigo-400 font-semibold mb-2">Dungeon Master</p>
+              <div className="flex gap-1">
+                {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Dice Panel */}
       {activeTab === "dice" && <DiceRoller onRollToChat={handleRollToChat} />}
 
       {/* Character Sheet Panel */}
       {activeTab === "sheet" && character && (
-        <div className="bg-gray-800 border-b border-gray-700 px-4 py-3 flex-shrink-0">
+        <div className="bg-gray-800 border-t border-gray-700 px-4 py-3 flex-shrink-0">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-2xl">{CLASS_ICONS[character.class]}</span>
             <div>
@@ -602,7 +628,7 @@ export default function App() {
 
       {/* Inventory Panel */}
       {activeTab === "inventory" && (
-        <div className="bg-gray-800 border-b border-gray-700 flex-shrink-0" style={{ maxHeight: "240px", overflowY: "auto" }}>
+        <div className="bg-gray-800 border-t border-gray-700 flex-shrink-0" style={{ maxHeight: "240px", overflowY: "auto" }}>
           <div className="px-4 py-3">
             <div className="flex items-center justify-between mb-3">
               <p className="font-semibold text-sm">Inventory</p>
@@ -641,32 +667,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* Chat */}
-      <div ref={chatRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map(m => (
-          <div key={m.id} className={`flex gap-3 ${m.role === "player" ? "flex-row-reverse" : ""}`}>
-            <div className="text-xl flex-shrink-0 mt-1">{m.role === "dm" ? "🎲" : CLASS_ICONS[character?.class] || "🧙"}</div>
-            <div className={`max-w-sm rounded-lg p-3 ${m.isRoll ? "bg-gray-700 border border-gray-600" : m.role === "dm" ? "bg-gray-800 border border-gray-700" : "bg-indigo-900 border border-indigo-700"}`}>
-              <p className={`text-xs mb-1 font-semibold ${m.role === "dm" ? "text-indigo-400" : m.isRoll ? "text-yellow-400" : "text-indigo-300"}`}>
-                {m.role === "dm" ? "Dungeon Master" : (m.name || "You")}
-              </p>
-              <p className="text-sm leading-relaxed text-gray-100">{m.text}</p>
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div className="flex gap-3">
-            <div className="text-xl">🎲</div>
-            <div className="bg-gray-800 border border-gray-700 rounded-lg p-3">
-              <p className="text-xs text-indigo-400 font-semibold mb-2">Dungeon Master</p>
-              <div className="flex gap-1">
-                {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Input */}
       <div className="p-4 bg-gray-800 border-t border-gray-700 flex-shrink-0">
