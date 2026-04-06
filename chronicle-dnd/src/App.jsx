@@ -246,7 +246,7 @@ export default function App() {
     setLoading(true);
     try {
       const filteredMessages = messages.concat(makeMsg("player", msg, { name: character?.name })).map(m => ({ role: m.role, text: m.text }));
-      const response = await fetch('http://localhost:3001/api/chat', {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
