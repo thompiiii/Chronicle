@@ -458,19 +458,6 @@ export default function App() {
     return () => window.speechSynthesis?.cancel();
   }, []);
 
-  useEffect(() => {
-    const lastMsg = messages[messages.length - 1];
-    const isLastMsgARoll = lastMsg?.isRoll;
-    if (isLastMsgARoll && userInput.trim() && !loading) {
-      if (autoSendTimeout.current) clearTimeout(autoSendTimeout.current);
-      autoSendTimeout.current = setTimeout(() => {
-        sendMessage();
-      }, 800);
-    }
-    return () => {
-      if (autoSendTimeout.current) clearTimeout(autoSendTimeout.current);
-    };
-  }, [userInput, messages, loading]);
 
   // Auto-save whenever key state changes (only while in game)
   useEffect(() => {
@@ -553,11 +540,13 @@ export default function App() {
   }
 
   function handleRollToChat(result) {
-    const label = result.isCrit ? " 🌟 CRITICAL HIT!" : result.isFumble ? " 💀 FUMBLE" : "";
+    const label = result.isCrit ? " — Critical Hit!" : result.isFumble ? " — Fumble!" : "";
     const modStr = result.modifier !== 0 ? fmtSign(result.modifier) : "";
-    const detail = result.count > 1 ? `[${result.rolls.join(", ")}]${modStr ? ` ${modStr}` : ""}` : "";
-    const text = `🎲 Rolled ${result.count}d${result.sides}${modStr}: **${result.total}**${detail}${label}`;
-    setMessages(prev => [...prev, makeMsg("player", text, { name: character?.name, isRoll: true })]);
+    const detail = result.count > 1 ? ` [${result.rolls.join(", ")}]` : "";
+    const rollPart = `[Rolled ${result.count}d${result.sides}${modStr}: **${result.total}**${detail}${label}]`;
+    const combined = userInput.trim() ? `${userInput.trim()} ${rollPart}` : rollPart;
+    setUserInput("");
+    sendMessage(combined);
   }
 
   async function sendMessage(overrideText) {
@@ -1103,15 +1092,30 @@ export default function App() {
 
       {/* Input Bar */}
       <div className="flex-shrink-0 bg-black border-t border-zinc-900 px-4 pt-3 pb-4">
-        <textarea
-          ref={inputRef}
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-base font-serif placeholder-zinc-700 focus:outline-none focus:border-amber-500 resize-none mb-2 transition-colors"
-          rows={2}
-          placeholder="What do you do?"
-          value={userInput}
-          onChange={e => setUserInput(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-        />
+        <div className="flex gap-2 mb-2 items-start">
+          <textarea
+            ref={inputRef}
+            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-base font-serif placeholder-zinc-700 focus:outline-none focus:border-amber-500 resize-none transition-colors"
+            rows={2}
+            placeholder="What do you do?"
+            value={userInput}
+            onChange={e => setUserInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
+          />
+          <button
+            onClick={() => {
+              const roll = rollDie(20);
+              const label = roll === 20 ? " — Critical Hit!" : roll === 1 ? " — Fumble!" : "";
+              const rollPart = `[Rolled d20: **${roll}**${label}]`;
+              const combined = userInput.trim() ? `${userInput.trim()} ${rollPart}` : rollPart;
+              setUserInput("");
+              sendMessage(combined);
+            }}
+            disabled={loading}
+            title="Quick roll d20"
+            className="w-10 h-10 mt-1 rounded-xl bg-zinc-900 hover:bg-amber-500 hover:text-black border border-zinc-800 text-base flex items-center justify-center cursor-pointer transition-colors disabled:opacity-30 flex-shrink-0"
+          >🎲</button>
+        </div>
         <div className="flex gap-2 mb-2">
           <button
             onClick={() => sendMessage()}
