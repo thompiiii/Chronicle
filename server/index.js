@@ -19,6 +19,13 @@ app.post("/api/chat", async (req, res) => {
 
   const systemPrompt = `You are a Dungeon Master running a D&D 5e campaign. Be vivid, atmospheric, and reactive to player choices. Keep responses under 150 words. Always end with "What do you do?"
 
+When a player's message contains a dice roll in brackets like [Rolled d20: **17**], narrate the outcome based on the result:
+- 1 (Fumble): Something goes badly wrong — dramatic failure with real consequences
+- 2-9: Failure or significant complication
+- 10-14: Partial success, or success with a cost
+- 15-19: Clear success
+- 20 (Critical Hit): Exceptional, memorable success beyond all expectations
+
 Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${character.class || ""}`.trim();
 
   const apiMessages = messages
