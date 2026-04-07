@@ -25,6 +25,101 @@ const SAMPLE_CAMPAIGN = `You stand at the entrance of the Sunken Keep of Malgrat
 
 const TYPE_COLORS = { Weapon:"text-red-400", Armor:"text-blue-400", Consumable:"text-green-400", Tool:"text-yellow-400", Misc:"text-gray-400" };
 
+// ── D&D 5e Item Database ───────────────────────────────────────────────────
+const ITEM_DB = [
+  // Weapons — Simple Melee
+  { name:"Club",            type:"Weapon", weight:2,    desc:"1d4 bludgeoning · Light" },
+  { name:"Dagger",          type:"Weapon", weight:1,    desc:"1d4 piercing · Finesse, Light, Thrown (20/60)" },
+  { name:"Greatclub",       type:"Weapon", weight:10,   desc:"1d8 bludgeoning · Two-handed" },
+  { name:"Handaxe",         type:"Weapon", weight:2,    desc:"1d6 slashing · Light, Thrown (20/60)" },
+  { name:"Javelin",         type:"Weapon", weight:2,    desc:"1d6 piercing · Thrown (30/120)" },
+  { name:"Light Hammer",    type:"Weapon", weight:2,    desc:"1d4 bludgeoning · Light, Thrown (20/60)" },
+  { name:"Mace",            type:"Weapon", weight:4,    desc:"1d6 bludgeoning" },
+  { name:"Quarterstaff",    type:"Weapon", weight:4,    desc:"1d6 bludgeoning · Versatile (1d8)" },
+  { name:"Spear",           type:"Weapon", weight:3,    desc:"1d6 piercing · Thrown (20/60), Versatile (1d8)" },
+  // Weapons — Simple Ranged
+  { name:"Dart",            type:"Weapon", weight:0.25, desc:"1d4 piercing · Finesse, Thrown (20/60)" },
+  { name:"Shortbow",        type:"Weapon", weight:2,    desc:"1d6 piercing · Range (80/320), Two-handed" },
+  { name:"Sling",           type:"Weapon", weight:0,    desc:"1d4 bludgeoning · Range (30/120)" },
+  { name:"Light Crossbow",  type:"Weapon", weight:5,    desc:"1d8 piercing · Range (80/320), Loading, Two-handed" },
+  // Weapons — Martial Melee
+  { name:"Battleaxe",       type:"Weapon", weight:4,    desc:"1d8 slashing · Versatile (1d10)" },
+  { name:"Flail",           type:"Weapon", weight:2,    desc:"1d8 bludgeoning" },
+  { name:"Glaive",          type:"Weapon", weight:6,    desc:"1d10 slashing · Heavy, Reach, Two-handed" },
+  { name:"Greataxe",        type:"Weapon", weight:7,    desc:"1d12 slashing · Heavy, Two-handed" },
+  { name:"Greatsword",      type:"Weapon", weight:6,    desc:"2d6 slashing · Heavy, Two-handed" },
+  { name:"Halberd",         type:"Weapon", weight:6,    desc:"1d10 slashing · Heavy, Reach, Two-handed" },
+  { name:"Longsword",       type:"Weapon", weight:3,    desc:"1d8 slashing · Versatile (1d10)" },
+  { name:"Maul",            type:"Weapon", weight:10,   desc:"2d6 bludgeoning · Heavy, Two-handed" },
+  { name:"Morningstar",     type:"Weapon", weight:4,    desc:"1d8 piercing" },
+  { name:"Pike",            type:"Weapon", weight:18,   desc:"1d10 piercing · Heavy, Reach, Two-handed" },
+  { name:"Rapier",          type:"Weapon", weight:2,    desc:"1d8 piercing · Finesse" },
+  { name:"Scimitar",        type:"Weapon", weight:3,    desc:"1d6 slashing · Finesse, Light" },
+  { name:"Shortsword",      type:"Weapon", weight:2,    desc:"1d6 piercing · Finesse, Light" },
+  { name:"Trident",         type:"Weapon", weight:4,    desc:"1d6 piercing · Thrown (20/60), Versatile (1d8)" },
+  { name:"War Pick",        type:"Weapon", weight:2,    desc:"1d8 piercing" },
+  { name:"Warhammer",       type:"Weapon", weight:2,    desc:"1d8 bludgeoning · Versatile (1d10)" },
+  { name:"Whip",            type:"Weapon", weight:3,    desc:"1d4 slashing · Finesse, Reach" },
+  // Weapons — Martial Ranged
+  { name:"Hand Crossbow",   type:"Weapon", weight:3,    desc:"1d6 piercing · Range (30/120), Light, Loading" },
+  { name:"Heavy Crossbow",  type:"Weapon", weight:18,   desc:"1d10 piercing · Heavy, Range (100/400), Loading, Two-handed" },
+  { name:"Longbow",         type:"Weapon", weight:2,    desc:"1d8 piercing · Heavy, Range (150/600), Two-handed" },
+  // Armor — Light
+  { name:"Leather Armor",   type:"Armor",  weight:10,   desc:"AC 11 + DEX · Light armor" },
+  { name:"Padded Armor",    type:"Armor",  weight:8,    desc:"AC 11 + DEX · Light armor, Disadvantage on Stealth" },
+  { name:"Studded Leather", type:"Armor",  weight:13,   desc:"AC 12 + DEX · Light armor" },
+  // Armor — Medium
+  { name:"Chain Shirt",     type:"Armor",  weight:20,   desc:"AC 13 + DEX (max 2) · Medium armor" },
+  { name:"Hide Armor",      type:"Armor",  weight:12,   desc:"AC 12 + DEX (max 2) · Medium armor" },
+  { name:"Scale Mail",      type:"Armor",  weight:45,   desc:"AC 14 + DEX (max 2) · Medium armor, Disadvantage on Stealth" },
+  { name:"Breastplate",     type:"Armor",  weight:20,   desc:"AC 14 + DEX (max 2) · Medium armor" },
+  { name:"Half Plate",      type:"Armor",  weight:40,   desc:"AC 15 + DEX (max 2) · Medium armor, Disadvantage on Stealth" },
+  // Armor — Heavy
+  { name:"Ring Mail",       type:"Armor",  weight:40,   desc:"AC 14 · Heavy armor, Disadvantage on Stealth" },
+  { name:"Chain Mail",      type:"Armor",  weight:55,   desc:"AC 16 · Heavy armor, Disadvantage on Stealth, STR 13 required" },
+  { name:"Splint Armor",    type:"Armor",  weight:60,   desc:"AC 17 · Heavy armor, Disadvantage on Stealth, STR 15 required" },
+  { name:"Plate Armor",     type:"Armor",  weight:65,   desc:"AC 18 · Heavy armor, Disadvantage on Stealth, STR 15 required" },
+  { name:"Shield",          type:"Armor",  weight:6,    desc:"+2 AC" },
+  // Consumables
+  { name:"Health Potion",          type:"Consumable", weight:0.5, desc:"Restores 2d4+2 HP" },
+  { name:"Greater Health Potion",  type:"Consumable", weight:0.5, desc:"Restores 4d4+4 HP" },
+  { name:"Superior Health Potion", type:"Consumable", weight:0.5, desc:"Restores 8d4+8 HP" },
+  { name:"Supreme Health Potion",  type:"Consumable", weight:0.5, desc:"Restores 10d4+20 HP" },
+  { name:"Antitoxin",              type:"Consumable", weight:0,   desc:"Advantage on CON saves vs poison for 1 hour" },
+  { name:"Alchemist's Fire",       type:"Consumable", weight:1,   desc:"1d4 fire damage/round until extinguished (DC 10 DEX to put out)" },
+  { name:"Acid Vial",              type:"Consumable", weight:1,   desc:"2d6 acid damage on hit" },
+  { name:"Holy Water",             type:"Consumable", weight:1,   desc:"2d6 radiant damage to undead/fiends" },
+  { name:"Healer's Kit",           type:"Consumable", weight:3,   desc:"Stabilize dying creature without Medicine check · 10 uses" },
+  { name:"Rations",                type:"Consumable", weight:2,   desc:"One day of food and water" },
+  { name:"Torch",                  type:"Consumable", weight:1,   desc:"Bright light 20 ft, dim 20 ft · 1 hour" },
+  { name:"Oil Flask",              type:"Consumable", weight:1,   desc:"Coat surface or deal 5 fire damage if ignited" },
+  // Tools
+  { name:"Thieves' Tools",   type:"Tool", weight:1, desc:"Pick locks and disarm traps" },
+  { name:"Herbalism Kit",    type:"Tool", weight:3, desc:"Craft antitoxins and healing potions" },
+  { name:"Disguise Kit",     type:"Tool", weight:3, desc:"Create disguises" },
+  { name:"Forgery Kit",      type:"Tool", weight:5, desc:"Create forged documents" },
+  { name:"Poisoner's Kit",   type:"Tool", weight:2, desc:"Craft and apply poisons" },
+  { name:"Navigator's Tools",type:"Tool", weight:2, desc:"Navigate by sea or land" },
+  // Misc / Gear
+  { name:"Arcane Focus",     type:"Misc", weight:1,  desc:"Spellcasting focus for arcane spells" },
+  { name:"Holy Symbol",      type:"Misc", weight:1,  desc:"Spellcasting focus for clerics and paladins" },
+  { name:"Druidic Focus",    type:"Misc", weight:2,  desc:"Spellcasting focus for druids" },
+  { name:"Spellbook",        type:"Misc", weight:3,  desc:"Contains wizard spells · 100 pages" },
+  { name:"Rope (Hempen)",    type:"Misc", weight:10, desc:"50 feet · supports up to 1,500 lbs" },
+  { name:"Rope (Silken)",    type:"Misc", weight:5,  desc:"50 feet · supports up to 1,500 lbs" },
+  { name:"Backpack",         type:"Misc", weight:5,  desc:"Holds 1 cubic foot / 30 lbs of gear" },
+  { name:"Bedroll",          type:"Misc", weight:7,  desc:"For resting outdoors" },
+  { name:"Tinderbox",        type:"Misc", weight:1,  desc:"Start a fire in one action" },
+  { name:"Grappling Hook",   type:"Misc", weight:4,  desc:"Thrown up to 25 ft to anchor rope" },
+  { name:"Crowbar",          type:"Misc", weight:5,  desc:"+2 to STR checks where leverage applies" },
+  { name:"Steel Mirror",     type:"Misc", weight:0.5,desc:"See around corners, reflect gaze attacks" },
+  { name:"Lantern (Bullseye)",type:"Misc",weight:2,  desc:"Bright light 60 ft cone, dim 60 ft · 6 hours/oil" },
+  { name:"Lantern (Hooded)", type:"Misc", weight:2,  desc:"Bright light 30 ft, dim 30 ft · 6 hours/oil" },
+  { name:"Compass",          type:"Misc", weight:0,  desc:"+1 to Survival checks for navigation" },
+  { name:"Quiver",           type:"Misc", weight:1,  desc:"Holds 20 arrows or bolts" },
+  { name:"Explorer's Pack",  type:"Misc", weight:10, desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft hempen rope" },
+];
+
 const DICE = [
   { sides: 4,   label: "d4",   color: "bg-purple-700 hover:bg-purple-600", dot: "◆" },
   { sides: 6,   label: "d6",   color: "bg-blue-700 hover:bg-blue-600",     dot: "⬡" },
@@ -444,6 +539,8 @@ export default function App() {
   const [deathSaves, setDeathSaves] = useState({ successes: 0, failures: 0 });
   const [newItemName, setNewItemName] = useState("");
   const [newItemType, setNewItemType] = useState("Misc");
+  const [itemSuggestions, setItemSuggestions] = useState([]);
+  const [selectedDbItem, setSelectedDbItem] = useState(null);
   const [charStep, setCharStep] = useState(0);
   const chatRef = useRef(null);
   const mockIndex = useRef(0);
@@ -1045,33 +1142,78 @@ export default function App() {
               <span>{inventory.length} items</span>
               <span>{inventory.reduce((a, i) => a + i.weight * i.qty, 0).toFixed(1)} lb total</span>
             </div>
-            {/* Add item */}
-            <div className="mt-2 pt-2 border-t border-zinc-800 flex gap-1">
-              <input
-                className="bg-black border border-zinc-800 rounded-lg px-2 py-1 text-white placeholder-zinc-700 text-xs focus:outline-none focus:border-amber-500 flex-1"
-                placeholder="Add item…"
-                value={newItemName}
-                onChange={e => setNewItemName(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && newItemName.trim()) {
-                    setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
-                    setNewItemName("");
-                  }
-                }}
-              />
-              <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
-                className="bg-black border border-zinc-800 rounded-lg px-1 py-1 text-white text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
-                {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
-              </select>
-              <button
-                onClick={() => {
-                  if (!newItemName.trim()) return;
-                  setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
-                  setNewItemName("");
-                }}
-                className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded-lg text-xs cursor-pointer transition-colors font-bold">
-                Add
-              </button>
+            {/* Add item with autocomplete */}
+            <div className="mt-2 pt-2 border-t border-zinc-800">
+              {/* Suggestions */}
+              {itemSuggestions.length > 0 && (
+                <div className="mb-1 rounded-lg border border-zinc-800 overflow-hidden">
+                  {itemSuggestions.map(item => (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        setNewItemName(item.name);
+                        setNewItemType(item.type);
+                        setSelectedDbItem(item);
+                        setItemSuggestions([]);
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-left transition-colors cursor-pointer border-b border-zinc-800 last:border-0"
+                    >
+                      <span className={`text-xs font-medium w-14 flex-shrink-0 ${TYPE_COLORS[item.type]}`}>{item.type}</span>
+                      <span className="text-white text-xs font-medium flex-shrink-0">{item.name}</span>
+                      <span className="text-zinc-600 text-xs truncate">{item.desc}</span>
+                      <span className="text-zinc-700 text-xs flex-shrink-0 ml-auto">{item.weight} lb</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {/* Selected item preview */}
+              {selectedDbItem && (
+                <div className="mb-1 px-2 py-1 bg-amber-900/20 border border-amber-900/40 rounded-lg">
+                  <p className="text-amber-400 text-xs">{selectedDbItem.desc} · {selectedDbItem.weight} lb</p>
+                </div>
+              )}
+              <div className="flex gap-1">
+                <input
+                  className="bg-black border border-zinc-800 rounded-lg px-2 py-1 text-white placeholder-zinc-700 text-xs focus:outline-none focus:border-amber-500 flex-1"
+                  placeholder="Search or add item…"
+                  value={newItemName}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setNewItemName(val);
+                    setSelectedDbItem(null);
+                    if (val.trim().length >= 2) {
+                      const q = val.toLowerCase();
+                      setItemSuggestions(ITEM_DB.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6));
+                    } else {
+                      setItemSuggestions([]);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && newItemName.trim()) {
+                      const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
+                      setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
+                      setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
+                    }
+                    if (e.key === "Escape") setItemSuggestions([]);
+                  }}
+                />
+                {!selectedDbItem && (
+                  <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
+                    className="bg-black border border-zinc-800 rounded-lg px-1 py-1 text-white text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
+                    {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
+                  </select>
+                )}
+                <button
+                  onClick={() => {
+                    if (!newItemName.trim()) return;
+                    const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
+                    setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
+                    setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
+                  }}
+                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded-lg text-xs cursor-pointer transition-colors font-bold flex-shrink-0">
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         </div>
