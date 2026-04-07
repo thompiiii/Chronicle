@@ -1079,11 +1079,36 @@ export default function App() {
 
       {/* Notes Panel */}
       {activeTab === "notes" && (
-        <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "260px" }}>
+        <div className="flex-shrink-0 border-t border-zinc-800" style={{ maxHeight: "300px", background: "#0f0a04" }}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-amber-900/30">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-600 text-sm">📜</span>
+              <span className="text-amber-700 text-xs font-serif tracking-widest uppercase">Quest Log</span>
+              {character && <span className="text-amber-900 text-xs font-serif">— {character.name}</span>}
+            </div>
+            <div className="flex gap-1">
+              {["Quest", "NPC", "Item", "Clue"].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setNotes(n => n + (n && !n.endsWith("\n") ? "\n" : "") + `\n[ ${tag} ] `)}
+                  className="text-xs text-amber-800 hover:text-amber-500 border border-amber-900/40 hover:border-amber-700 rounded px-1.5 py-0.5 cursor-pointer transition-colors font-serif"
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Textarea */}
           <textarea
-            className="w-full bg-black text-zinc-200 text-sm p-4 resize-none focus:outline-none placeholder-zinc-800 font-serif"
-            style={{ height: "180px" }}
-            placeholder="Quest notes, NPC names, clues, loot to track…"
+            className="w-full resize-none focus:outline-none font-serif text-sm leading-relaxed px-4 py-3"
+            style={{
+              height: "200px",
+              background: "#0f0a04",
+              color: "#c8a96e",
+              caretColor: "#c8a96e",
+            }}
+            placeholder={"Write your notes here...\n\nUse the tags above to organize quests, NPCs, items, and clues."}
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />
