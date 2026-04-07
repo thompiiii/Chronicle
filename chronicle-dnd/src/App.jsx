@@ -493,6 +493,15 @@ export default function App() {
     setScreen("character");
   }
 
+  function joinSession() {
+    if (inputCode.trim().length < 4) return;
+    setSessionCode(inputCode.toUpperCase());
+    setIsHost(false);
+    setCharStep(0);
+    setCharName("");
+    setScreen("character");
+  }
+
   function autoGenerateCharacter() {
     setStats(generateStats());
     setCharName(`${charRace} ${charClass} #${Math.floor(Math.random() * 999) + 1}`);
@@ -666,6 +675,27 @@ export default function App() {
                 Continue Campaign
               </button>
             )}
+            {/* Join with session code */}
+            <div className="pt-2">
+              <p className="text-zinc-700 text-xs text-center mb-2 tracking-widest uppercase">Join a session</p>
+              <div className="flex gap-2 items-center">
+                <input
+                  className="flex-1 bg-transparent border-b border-zinc-800 text-white text-center text-lg font-mono pb-1 focus:outline-none focus:border-amber-500 placeholder-zinc-800 tracking-widest uppercase transition-colors"
+                  placeholder="CODE"
+                  value={inputCode}
+                  onChange={e => setInputCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  onKeyDown={e => e.key === "Enter" && joinSession()}
+                />
+                <button
+                  onClick={joinSession}
+                  disabled={inputCode.trim().length < 4}
+                  className="text-zinc-500 hover:text-amber-400 disabled:opacity-30 text-sm font-bold cursor-pointer transition-colors tracking-wide"
+                >
+                  JOIN →
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -678,7 +708,10 @@ export default function App() {
       <div className="min-h-screen bg-black text-white flex flex-col">
         <div className="flex items-center justify-between p-4">
           <button onClick={() => setScreen("home")} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">Step 1 of 3</span>
+          <div className="flex items-center gap-3">
+            {sessionCode && <span className="text-amber-500 font-mono font-bold tracking-widest text-sm">{sessionCode}</span>}
+            <span className="text-zinc-600 text-sm">Step 1 of 3</span>
+          </div>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-8 gap-10">
           <p className="text-zinc-500 text-lg font-serif">Enter your character's name…</p>
@@ -793,6 +826,7 @@ export default function App() {
           title="Back to home"
         >🔥</button>
         <div className="flex items-center gap-2">
+          {sessionCode && <span className="text-amber-600 font-mono text-xs font-bold tracking-widest">{sessionCode}</span>}
           {speaking && <span className="text-xs text-amber-400 animate-pulse">● Speaking</span>}
           {justSaved && <span className="text-xs text-green-400">✓</span>}
           {TAB_BUTTONS.map(t => (
