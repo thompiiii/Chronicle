@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { processTurn, applyTurnToState, formatRollSummary } from "./game/gameEngine";
+import { getNarration } from "./game/aiClient";
 
 const CLASSES = ["Barbarian","Bard","Cleric","Druid","Fighter","Monk","Paladin","Ranger","Rogue","Sorcerer","Warlock","Wizard"];
 const RACES = ["Human","Elf","Dwarf","Halfling","Gnome","Half-Orc","Tiefling","Dragonborn","Half-Elf","Aasimar"];
@@ -673,36 +675,72 @@ export default function App() {
     const rollPart = `[Rolled ${result.count}d${result.sides}${modStr}: **${result.total}**${detail}${label}]`;
     const combined = userInput.trim() ? `${userInput.trim()} ${rollPart}` : rollPart;
     setUserInput("");
-    sendMessage(combined);
+    sendMessage(combined, true); // skipEngine — dice already rolled by the player
   }
 
-  async function sendMessage(overrideText) {
+  async function sendMessage(overrideText, skipEngine = false) {
     const msg = (typeof overrideText === "string" ? overrideText : userInput).trim();
     if (!msg || loading) return;
     if (typeof overrideText !== "string") setUserInput("");
+
+    // Use the game engine for all typed player actions.
+    // Skip it for: manual dice rolls, CONTINUE, and pre-game screens.
+    const useEngine = !skipEngine && character !== null;
+
     setMessages(prev => [...prev, makeMsg("player", msg, { name: character?.name })]);
     setLoading(true);
+
     try {
-      const filteredMessages = messages.concat(makeMsg("player", msg, { name: character?.name })).map(m => ({ role: m.role, text: m.text }));
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: filteredMessages,
-          character: { name: character?.name, class: character?.class, race: character?.race, background: character?.background }
-        })
-      });
-      if (!response.ok) throw new Error(`Server error ${response.status}`);
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let dmReply = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
+      if (useEngine) {
+        // ── Game Engine Path ──────────────────────────────────────────────
+        // Step 1: resolve action in code — dice roll + outcome determined here,
+        //         BEFORE the AI is ever called.
+        const turnResult = processTurn(msg, { character });
+
+        // Step 2: show the roll badge in chat immediately
+        setMessages(prev => [...prev, makeMsg("roll", formatRollSummary(turnResult), { turnResult })]);
+
+        // Step 3: apply deterministic state changes (fumble self-damage, etc.)
+        const changes = applyTurnToState(turnResult);
+        if (changes.hpDelta) {
+          setCurrentHp(h => Math.max(0, h + changes.hpDelta));
+        }
+
+        // Step 4: ask AI to narrate — it receives the outcome, cannot change it
+        const narration = await getNarration(
+          turnResult,
+          { character, messages },
+          { onError: (e) => setMessages(prev => [...prev, makeMsg("dm", `⚠️ ${e}`)]) }
+        );
+
+        if (narration) {
+          setMessages(prev => [...prev, makeMsg("dm", narration)]);
+          speakText(narration);
+          triggerSaveFlash();
+        }
+      } else {
+        // ── Freeform Path (CONTINUE, manual dice rolls from Dice tab) ─────
+        const filteredMessages = messages
+          .concat(makeMsg("player", msg, { name: character?.name }))
+          .map(m => ({ role: m.role, text: m.text }));
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: filteredMessages,
+            character: { name: character?.name, class: character?.class, race: character?.race, background: character?.background }
+          })
+        });
+        if (!response.ok) throw new Error(`Server error ${response.status}`);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let dmReply = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          for (const line of chunk.split('\n')) {
+            if (!line.startsWith('data: ')) continue;
             const data = line.slice(6);
             if (data === '[DONE]') break;
             try {
@@ -718,11 +756,11 @@ export default function App() {
             }
           }
         }
-      }
-      if (dmReply) {
-        setMessages(prev => [...prev, makeMsg("dm", dmReply)]);
-        speakText(dmReply);
-        triggerSaveFlash();
+        if (dmReply) {
+          setMessages(prev => [...prev, makeMsg("dm", dmReply)]);
+          speakText(dmReply);
+          triggerSaveFlash();
+        }
       }
     } catch (err) {
       setMessages(prev => [...prev, makeMsg("dm", `⚠️ ${err.message}`)]);
@@ -1000,21 +1038,38 @@ export default function App() {
 
       {/* Story / Chat */}
       <div ref={chatRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
-        {messages.map(m => (
-          m.role === "dm" ? (
+        {messages.map(m => {
+          if (m.role === "dm") return (
             <div key={m.id} className="bg-zinc-900 rounded-2xl px-5 py-4">
               <div className="text-white text-lg font-serif leading-relaxed">
                 {renderMarkdown(m.text)}
               </div>
             </div>
-          ) : (
+          );
+          if (m.role === "roll") {
+            const outcomeColor = {
+              critical: "text-yellow-400 border-yellow-800",
+              success:  "text-green-400 border-green-900",
+              partial:  "text-amber-400 border-amber-900",
+              failure:  "text-zinc-400 border-zinc-800",
+              fumble:   "text-red-400 border-red-900",
+            }[m.turnResult?.outcome] ?? "text-zinc-400 border-zinc-800";
+            return (
+              <div key={m.id} className="flex justify-center">
+                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-950 border text-xs font-mono ${outcomeColor}`}>
+                  🎲 {m.text}
+                </div>
+              </div>
+            );
+          }
+          return (
             <div key={m.id} className="flex justify-end px-1">
               <p className={`text-sm text-right max-w-xs leading-relaxed ${m.isRoll ? "text-amber-400 font-medium" : "text-zinc-500"}`}>
                 {m.text}
               </p>
             </div>
-          )
-        ))}
+          );
+        })}
         {loading && (
           <div className="bg-zinc-900 rounded-2xl px-5 py-4">
             <p className="text-amber-400/70 italic text-sm animate-pulse">{DM_THINKING[thinkingIdx % DM_THINKING.length]}</p>
@@ -1274,7 +1329,7 @@ export default function App() {
               const rollPart = `[Rolled d20: **${roll}**${label}]`;
               const combined = userInput.trim() ? `${userInput.trim()} ${rollPart}` : rollPart;
               setUserInput("");
-              sendMessage(combined);
+              sendMessage(combined, true); // skipEngine — dice already rolled
             }}
             disabled={loading}
             title="Quick roll d20"
@@ -1289,7 +1344,7 @@ export default function App() {
             ✏️ TAKE A TURN
           </button>
           <button
-            onClick={() => sendMessage("Continue the story.")}
+            onClick={() => sendMessage("Continue the story.", true)}
             disabled={loading}
             className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-2xl font-bold text-xs tracking-widest disabled:opacity-30 cursor-pointer transition-colors">
             ✦ CONTINUE
