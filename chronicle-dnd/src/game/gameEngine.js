@@ -118,8 +118,8 @@ const ROLL_TRIGGERS = [
   // Combat
   "attack", "strike", "hit", "slash", "stab", "shoot", "fire", "kill", "slay",
   "swing", "bash", "smash", "charge", "thrust",
-  // Stealth / theft
-  "sneak", "hide", "steal", "pickpocket", "pick lock", "picklock", "disarm",
+  // Stealth / theft / investigation
+  "sneak", "hide", "steal", "pickpocket", "pick lock", "picklock", "disarm", "search",
   // Social
   "persuade", "convince", "deceive", "bluff", "intimidate", "charm", "bribe",
   // Magic
