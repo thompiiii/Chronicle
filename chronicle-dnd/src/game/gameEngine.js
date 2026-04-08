@@ -110,6 +110,29 @@ function rollDamage(charClass, isCrit) {
   return { total: base + extra, sides, base, extra };
 }
 
+// ── Should this action trigger a dice roll? ────────────────────────────────
+// Only contested / skill-check actions roll. Pure narration (exploring a room,
+// looking around, moving) flows straight to the AI without a roll.
+
+const ROLL_TRIGGERS = [
+  // Combat
+  "attack", "strike", "hit", "slash", "stab", "shoot", "fire", "kill", "slay",
+  "swing", "bash", "smash", "charge", "thrust",
+  // Stealth / theft
+  "sneak", "hide", "steal", "pickpocket", "pick lock", "picklock", "disarm",
+  // Social
+  "persuade", "convince", "deceive", "bluff", "intimidate", "charm", "bribe",
+  // Magic
+  "cast", "spell",
+  // Athletics / action
+  "flee", "escape", "climb", "jump", "swim", "force", "break", "push", "pull",
+];
+
+export function shouldRoll(playerInput) {
+  const lower = playerInput.toLowerCase();
+  return ROLL_TRIGGERS.some(word => lower.includes(word));
+}
+
 // ── Main Turn Processor ────────────────────────────────────────────────────
 // Call this with the player's raw text and the current game state.
 // Returns a deterministic TurnResult. No AI involved.
@@ -133,33 +156,32 @@ export function processTurn(playerInput, gameState) {
   const stats     = character?.stats ?? {};
   const charClass = character?.class  ?? "Fighter";
 
-  const intent   = detectIntent(playerInput);
-  const dc       = ACTION_DC[intent] ?? 12;
-  const modifier = getModifier(intent, stats);
-
-  // ── Dice rolls happen HERE, before AI is called ──
-  const rawRoll  = rollDie(20);
-  const total    = rawRoll + modifier;
-  const isCrit   = rawRoll === 20;
-  const isFumble = rawRoll === 1;
-
-  const outcome = computeOutcome(rawRoll, total, dc);
+  const intent  = detectIntent(playerInput);
+  const needsRoll = shouldRoll(playerInput);
 
   const result = {
-    action:   playerInput,
+    action: playerInput,
     intent,
-    rawRoll,
-    modifier,
-    total,
-    dc,
-    outcome,
-    isCrit,
-    isFumble,
+    needsRoll,
   };
 
-  // ── Intent-specific resolutions ──────────────────────────────────────────
-  if (intent === "attack" && outcome !== "failure" && outcome !== "fumble") {
-    result.damage = rollDamage(charClass, isCrit);
+  if (needsRoll) {
+    const dc       = ACTION_DC[intent] ?? 12;
+    const modifier = getModifier(intent, stats);
+
+    // ── Dice rolls happen HERE, before AI is called ──
+    const rawRoll  = rollDie(20);
+    const total    = rawRoll + modifier;
+    const isCrit   = rawRoll === 20;
+    const isFumble = rawRoll === 1;
+    const outcome  = computeOutcome(rawRoll, total, dc);
+
+    Object.assign(result, { rawRoll, modifier, total, dc, outcome, isCrit, isFumble });
+
+    // ── Intent-specific resolutions ────────────────────────────────────────
+    if (intent === "attack" && outcome !== "failure" && outcome !== "fumble") {
+      result.damage = rollDamage(charClass, isCrit);
+    }
   }
 
   return result;

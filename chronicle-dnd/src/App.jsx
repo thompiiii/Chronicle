@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { processTurn, applyTurnToState, formatRollSummary } from "./game/gameEngine";
+import { processTurn, applyTurnToState, formatRollSummary, shouldRoll } from "./game/gameEngine";
 import { getNarration } from "./game/aiClient";
 
 const CLASSES = ["Barbarian","Bard","Cleric","Druid","Fighter","Monk","Paladin","Ranger","Rogue","Sorcerer","Warlock","Wizard"];
@@ -697,8 +697,10 @@ export default function App() {
         //         BEFORE the AI is ever called.
         const turnResult = processTurn(msg, { character });
 
-        // Step 2: show the roll badge in chat immediately
-        setMessages(prev => [...prev, makeMsg("roll", formatRollSummary(turnResult), { turnResult })]);
+        // Step 2: show the roll badge only if this action required a roll
+        if (turnResult.needsRoll) {
+          setMessages(prev => [...prev, makeMsg("roll", formatRollSummary(turnResult), { turnResult })]);
+        }
 
         // Step 3: apply deterministic state changes (fumble self-damage, etc.)
         const changes = applyTurnToState(turnResult);
