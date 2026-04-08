@@ -58,7 +58,7 @@ Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${c
     res.write("data: [DONE]\n\n");
     res.end();
   } catch (err) {
-    const msg = err instanceof Anthropic.APIError ? err.message : "Unexpected error";
+    const msg = err?.message || "Unexpected error";
     res.write(`data: ${JSON.stringify({ error: msg })}\n\n`);
     res.end();
   }
