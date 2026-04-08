@@ -25,25 +25,26 @@ function buildTurnMessage(turnResult) {
   const modStr   = modifier > 0 ? `+${modifier}` : modifier < 0 ? `${modifier}` : "";
   const totalStr = modifier !== 0 ? ` = ${total}` : "";
 
-  const lines = [
-    `Player action: "${action}"`,
-    `Action type: ${intent}`,
-    `Dice: d20 rolled ${rawRoll}${modStr}${totalStr} vs DC ${dc}`,
-    `Outcome: ${outcome.toUpperCase()}${isCrit ? " (NATURAL 20)" : ""}${isFumble ? " (NATURAL 1)" : ""}`,
-  ];
+  const lines = [`Player action: "${action}"`, `Action type: ${intent}`];
 
-  if (damage) {
-    const critNote = isCrit
-      ? ` (${damage.base} + ${damage.extra} crit bonus = ${damage.total})`
-      : "";
-    lines.push(`Damage dealt: ${damage.total}${critNote}`);
+  if (outcome) {
+    // Contested action — dice were rolled, outcome is decided
+    lines.push(
+      `Dice: d20 rolled ${rawRoll}${modStr}${totalStr} vs DC ${dc}`,
+      `Outcome: ${outcome.toUpperCase()}${isCrit ? " (NATURAL 20)" : ""}${isFumble ? " (NATURAL 1)" : ""}`,
+    );
+    if (damage) {
+      const critNote = isCrit ? ` (${damage.base} + ${damage.extra} crit bonus = ${damage.total})` : "";
+      lines.push(`Damage dealt: ${damage.total}${critNote}`);
+    }
+    if (isFumble && intent === "attack") {
+      lines.push("The fumble also caused 1 point of self-inflicted damage.");
+    }
+    lines.push("", OUTCOME_DIRECTION[outcome]);
+  } else {
+    // No roll needed — free narration action (exploring, moving, observing)
+    lines.push("No dice roll required. Narrate this action freely and atmospherically.");
   }
-
-  if (isFumble && intent === "attack") {
-    lines.push("The fumble also caused 1 point of self-inflicted damage.");
-  }
-
-  lines.push("", OUTCOME_DIRECTION[outcome]);
 
   return lines.join("\n");
 }
