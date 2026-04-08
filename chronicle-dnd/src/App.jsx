@@ -6,104 +6,11 @@ const CLASS_ICONS = { Barbarian:"⚔️", Bard:"🎵", Cleric:"✝️", Druid:"�
 const INITIAL_STATS = { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 };
 
 const STARTING_INVENTORY = {
-  Barbarian: [
-    { id:1,  name:"Greataxe",        type:"Weapon",     weight:7,    desc:"1d12 slashing · Heavy, Two-handed",                                                qty:1 },
-    { id:2,  name:"Handaxe",         type:"Weapon",     weight:2,    desc:"1d6 slashing · Light, Thrown (20/60)",                                             qty:2 },
-    { id:3,  name:"Javelin",         type:"Weapon",     weight:2,    desc:"1d6 piercing · Thrown (30/120)",                                                   qty:4 },
-    { id:4,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:5,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:2 },
-  ],
-  Bard: [
-    { id:1,  name:"Rapier",          type:"Weapon",     weight:2,    desc:"1d8 piercing · Finesse",                                                           qty:1 },
-    { id:2,  name:"Dagger",          type:"Weapon",     weight:1,    desc:"1d4 piercing · Finesse, Light, Thrown (20/60)",                                   qty:1 },
-    { id:3,  name:"Leather Armor",   type:"Armor",      weight:10,   desc:"AC 11 + DEX · Light armor",                                                        qty:1 },
-    { id:4,  name:"Lute",            type:"Misc",       weight:2,    desc:"Musical instrument · Bardic Inspiration focus",                                    qty:1 },
-    { id:5,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:6,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:1 },
-  ],
-  Cleric: [
-    { id:1,  name:"Mace",            type:"Weapon",     weight:4,    desc:"1d6 bludgeoning",                                                                  qty:1 },
-    { id:2,  name:"Scale Mail",      type:"Armor",      weight:45,   desc:"AC 14 + DEX (max 2) · Medium armor, Disadvantage on Stealth",                      qty:1 },
-    { id:3,  name:"Shield",          type:"Armor",      weight:6,    desc:"+2 AC",                                                                             qty:1 },
-    { id:4,  name:"Holy Symbol",     type:"Misc",       weight:1,    desc:"Spellcasting focus for clerics and paladins",                                       qty:1 },
-    { id:5,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:6,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:2 },
-  ],
-  Druid: [
-    { id:1,  name:"Scimitar",        type:"Weapon",     weight:3,    desc:"1d6 slashing · Finesse, Light",                                                    qty:1 },
-    { id:2,  name:"Shield",          type:"Armor",      weight:6,    desc:"+2 AC",                                                                             qty:1 },
-    { id:3,  name:"Leather Armor",   type:"Armor",      weight:10,   desc:"AC 11 + DEX · Light armor",                                                        qty:1 },
-    { id:4,  name:"Druidic Focus",   type:"Misc",       weight:2,    desc:"Spellcasting focus for druids",                                                     qty:1 },
-    { id:5,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:6,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:2 },
-  ],
-  Fighter: [
-    { id:1,  name:"Longsword",       type:"Weapon",     weight:3,    desc:"1d8 slashing · Versatile (1d10)",                                                  qty:1 },
-    { id:2,  name:"Shield",          type:"Armor",      weight:6,    desc:"+2 AC",                                                                             qty:1 },
-    { id:3,  name:"Chain Mail",      type:"Armor",      weight:55,   desc:"AC 16 · Heavy armor, Disadvantage on Stealth, STR 13 required",                   qty:1 },
-    { id:4,  name:"Light Crossbow",  type:"Weapon",     weight:5,    desc:"1d8 piercing · Range (80/320), Loading, Two-handed",                              qty:1 },
-    { id:5,  name:"Bolts",           type:"Consumable", weight:1.5,  desc:"Ammunition for crossbow · 20 bolts",                                               qty:20 },
-    { id:6,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:7,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:2 },
-  ],
-  Monk: [
-    { id:1,  name:"Shortsword",      type:"Weapon",     weight:2,    desc:"1d6 piercing · Finesse, Light",                                                    qty:1 },
-    { id:2,  name:"Dart",            type:"Weapon",     weight:0.25, desc:"1d4 piercing · Finesse, Thrown (20/60)",                                           qty:10 },
-    { id:3,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:4,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:2 },
-  ],
-  Paladin: [
-    { id:1,  name:"Longsword",       type:"Weapon",     weight:3,    desc:"1d8 slashing · Versatile (1d10)",                                                  qty:1 },
-    { id:2,  name:"Shield",          type:"Armor",      weight:6,    desc:"+2 AC",                                                                             qty:1 },
-    { id:3,  name:"Chain Mail",      type:"Armor",      weight:55,   desc:"AC 16 · Heavy armor, Disadvantage on Stealth, STR 13 required",                   qty:1 },
-    { id:4,  name:"Javelin",         type:"Weapon",     weight:2,    desc:"1d6 piercing · Thrown (30/120)",                                                   qty:5 },
-    { id:5,  name:"Holy Symbol",     type:"Misc",       weight:1,    desc:"Spellcasting focus for clerics and paladins",                                       qty:1 },
-    { id:6,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:7,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:2 },
-  ],
-  Ranger: [
-    { id:1,  name:"Shortsword",      type:"Weapon",     weight:2,    desc:"1d6 piercing · Finesse, Light",                                                    qty:2 },
-    { id:2,  name:"Longbow",         type:"Weapon",     weight:2,    desc:"1d8 piercing · Heavy, Range (150/600), Two-handed",                               qty:1 },
-    { id:3,  name:"Arrows",          type:"Consumable", weight:1,    desc:"Ammunition for bows · 20 arrows",                                                  qty:20 },
-    { id:4,  name:"Scale Mail",      type:"Armor",      weight:45,   desc:"AC 14 + DEX (max 2) · Medium armor, Disadvantage on Stealth",                      qty:1 },
-    { id:5,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:6,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:2 },
-  ],
-  Rogue: [
-    { id:1,  name:"Rapier",          type:"Weapon",     weight:2,    desc:"1d8 piercing · Finesse",                                                           qty:1 },
-    { id:2,  name:"Shortbow",        type:"Weapon",     weight:2,    desc:"1d6 piercing · Range (80/320), Two-handed",                                        qty:1 },
-    { id:3,  name:"Arrows",          type:"Consumable", weight:1,    desc:"Ammunition for bows · 20 arrows",                                                  qty:20 },
-    { id:4,  name:"Dagger",          type:"Weapon",     weight:1,    desc:"1d4 piercing · Finesse, Light, Thrown (20/60)",                                   qty:2 },
-    { id:5,  name:"Leather Armor",   type:"Armor",      weight:10,   desc:"AC 11 + DEX · Light armor",                                                        qty:1 },
-    { id:6,  name:"Thieves' Tools",  type:"Tool",       weight:1,    desc:"Pick locks and disarm traps",                                                       qty:1 },
-    { id:7,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:8,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:1 },
-  ],
-  Sorcerer: [
-    { id:1,  name:"Light Crossbow",  type:"Weapon",     weight:5,    desc:"1d8 piercing · Range (80/320), Loading, Two-handed",                              qty:1 },
-    { id:2,  name:"Bolts",           type:"Consumable", weight:1.5,  desc:"Ammunition for crossbow · 20 bolts",                                               qty:20 },
-    { id:3,  name:"Dagger",          type:"Weapon",     weight:1,    desc:"1d4 piercing · Finesse, Light, Thrown (20/60)",                                   qty:2 },
-    { id:4,  name:"Arcane Focus",    type:"Misc",       weight:1,    desc:"Spellcasting focus for arcane spells",                                              qty:1 },
-    { id:5,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:6,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:1 },
-  ],
-  Warlock: [
-    { id:1,  name:"Light Crossbow",  type:"Weapon",     weight:5,    desc:"1d8 piercing · Range (80/320), Loading, Two-handed",                              qty:1 },
-    { id:2,  name:"Bolts",           type:"Consumable", weight:1.5,  desc:"Ammunition for crossbow · 20 bolts",                                               qty:20 },
-    { id:3,  name:"Dagger",          type:"Weapon",     weight:1,    desc:"1d4 piercing · Finesse, Light, Thrown (20/60)",                                   qty:2 },
-    { id:4,  name:"Leather Armor",   type:"Armor",      weight:10,   desc:"AC 11 + DEX · Light armor",                                                        qty:1 },
-    { id:5,  name:"Arcane Focus",    type:"Misc",       weight:1,    desc:"Spellcasting focus for arcane spells",                                              qty:1 },
-    { id:6,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:7,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:1 },
-  ],
-  Wizard: [
-    { id:1,  name:"Quarterstaff",    type:"Weapon",     weight:4,    desc:"1d6 bludgeoning · Versatile (1d8)",                                                qty:1 },
-    { id:2,  name:"Dagger",          type:"Weapon",     weight:1,    desc:"1d4 piercing · Finesse, Light, Thrown (20/60)",                                   qty:1 },
-    { id:3,  name:"Spellbook",       type:"Misc",       weight:3,    desc:"Contains wizard spells · 100 pages",                                               qty:1 },
-    { id:4,  name:"Arcane Focus",    type:"Misc",       weight:1,    desc:"Spellcasting focus for arcane spells",                                              qty:1 },
-    { id:5,  name:"Explorer's Pack", type:"Misc",       weight:10,   desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft rope", qty:1 },
-    { id:6,  name:"Health Potion",   type:"Consumable", weight:0.5,  desc:"Restores 2d4+2 HP",                                                               qty:1 },
-  ],
+  Fighter:  [{ id:1, name:"Longsword", type:"Weapon", weight:3, desc:"1d8 slashing" }, { id:2, name:"Shield", type:"Armor", weight:6, desc:"+2 AC" }, { id:3, name:"Chain Mail", type:"Armor", weight:55, desc:"AC 16" }, { id:4, name:"Health Potion", type:"Consumable", weight:0.5, desc:"Restores 2d4+2 HP", qty:2 }],
+  Wizard:   [{ id:1, name:"Quarterstaff", type:"Weapon", weight:4, desc:"1d6 bludgeoning" }, { id:2, name:"Spellbook", type:"Misc", weight:3, desc:"Contains your spells" }, { id:3, name:"Arcane Focus", type:"Misc", weight:1, desc:"Crystal orb" }, { id:4, name:"Health Potion", type:"Consumable", weight:0.5, desc:"Restores 2d4+2 HP", qty:1 }],
+  Rogue:    [{ id:1, name:"Shortsword", type:"Weapon", weight:2, desc:"1d6 piercing" }, { id:2, name:"Daggers", type:"Weapon", weight:1, desc:"1d4 piercing", qty:5 }, { id:3, name:"Thieves' Tools", type:"Tool", weight:1, desc:"Pick locks & disarm traps" }, { id:4, name:"Health Potion", type:"Consumable", weight:0.5, desc:"Restores 2d4+2 HP", qty:2 }],
+  Cleric:   [{ id:1, name:"Mace", type:"Weapon", weight:4, desc:"1d6 bludgeoning" }, { id:2, name:"Holy Symbol", type:"Misc", weight:1, desc:"Channel Divinity focus" }, { id:3, name:"Scale Mail", type:"Armor", weight:45, desc:"AC 14" }, { id:4, name:"Health Potion", type:"Consumable", weight:0.5, desc:"Restores 2d4+2 HP", qty:3 }],
+  default:  [{ id:1, name:"Handaxe", type:"Weapon", weight:2, desc:"1d6 slashing", qty:2 }, { id:2, name:"Explorer's Pack", type:"Misc", weight:10, desc:"Rope, rations, torches" }, { id:3, name:"Health Potion", type:"Consumable", weight:0.5, desc:"Restores 2d4+2 HP", qty:2 }],
 };
 
 const MOCK_RESPONSES = [
@@ -118,104 +25,6 @@ const SAMPLE_CAMPAIGN = `You stand at the entrance of the Sunken Keep of Malgrat
 
 const TYPE_COLORS = { Weapon:"text-red-400", Armor:"text-blue-400", Consumable:"text-green-400", Tool:"text-yellow-400", Misc:"text-gray-400" };
 
-// ── D&D 5e Item Database ───────────────────────────────────────────────────
-const ITEM_DB = [
-  // Weapons — Simple Melee
-  { name:"Club",            type:"Weapon", weight:2,    desc:"1d4 bludgeoning · Light" },
-  { name:"Dagger",          type:"Weapon", weight:1,    desc:"1d4 piercing · Finesse, Light, Thrown (20/60)" },
-  { name:"Greatclub",       type:"Weapon", weight:10,   desc:"1d8 bludgeoning · Two-handed" },
-  { name:"Handaxe",         type:"Weapon", weight:2,    desc:"1d6 slashing · Light, Thrown (20/60)" },
-  { name:"Javelin",         type:"Weapon", weight:2,    desc:"1d6 piercing · Thrown (30/120)" },
-  { name:"Light Hammer",    type:"Weapon", weight:2,    desc:"1d4 bludgeoning · Light, Thrown (20/60)" },
-  { name:"Mace",            type:"Weapon", weight:4,    desc:"1d6 bludgeoning" },
-  { name:"Quarterstaff",    type:"Weapon", weight:4,    desc:"1d6 bludgeoning · Versatile (1d8)" },
-  { name:"Spear",           type:"Weapon", weight:3,    desc:"1d6 piercing · Thrown (20/60), Versatile (1d8)" },
-  // Weapons — Simple Ranged
-  { name:"Dart",            type:"Weapon", weight:0.25, desc:"1d4 piercing · Finesse, Thrown (20/60)" },
-  { name:"Shortbow",        type:"Weapon", weight:2,    desc:"1d6 piercing · Range (80/320), Two-handed" },
-  { name:"Sling",           type:"Weapon", weight:0,    desc:"1d4 bludgeoning · Range (30/120)" },
-  { name:"Light Crossbow",  type:"Weapon", weight:5,    desc:"1d8 piercing · Range (80/320), Loading, Two-handed" },
-  // Weapons — Martial Melee
-  { name:"Battleaxe",       type:"Weapon", weight:4,    desc:"1d8 slashing · Versatile (1d10)" },
-  { name:"Flail",           type:"Weapon", weight:2,    desc:"1d8 bludgeoning" },
-  { name:"Glaive",          type:"Weapon", weight:6,    desc:"1d10 slashing · Heavy, Reach, Two-handed" },
-  { name:"Greataxe",        type:"Weapon", weight:7,    desc:"1d12 slashing · Heavy, Two-handed" },
-  { name:"Greatsword",      type:"Weapon", weight:6,    desc:"2d6 slashing · Heavy, Two-handed" },
-  { name:"Halberd",         type:"Weapon", weight:6,    desc:"1d10 slashing · Heavy, Reach, Two-handed" },
-  { name:"Longsword",       type:"Weapon", weight:3,    desc:"1d8 slashing · Versatile (1d10)" },
-  { name:"Maul",            type:"Weapon", weight:10,   desc:"2d6 bludgeoning · Heavy, Two-handed" },
-  { name:"Morningstar",     type:"Weapon", weight:4,    desc:"1d8 piercing" },
-  { name:"Pike",            type:"Weapon", weight:18,   desc:"1d10 piercing · Heavy, Reach, Two-handed" },
-  { name:"Rapier",          type:"Weapon", weight:2,    desc:"1d8 piercing · Finesse" },
-  { name:"Scimitar",        type:"Weapon", weight:3,    desc:"1d6 slashing · Finesse, Light" },
-  { name:"Shortsword",      type:"Weapon", weight:2,    desc:"1d6 piercing · Finesse, Light" },
-  { name:"Trident",         type:"Weapon", weight:4,    desc:"1d6 piercing · Thrown (20/60), Versatile (1d8)" },
-  { name:"War Pick",        type:"Weapon", weight:2,    desc:"1d8 piercing" },
-  { name:"Warhammer",       type:"Weapon", weight:2,    desc:"1d8 bludgeoning · Versatile (1d10)" },
-  { name:"Whip",            type:"Weapon", weight:3,    desc:"1d4 slashing · Finesse, Reach" },
-  // Weapons — Martial Ranged
-  { name:"Hand Crossbow",   type:"Weapon", weight:3,    desc:"1d6 piercing · Range (30/120), Light, Loading" },
-  { name:"Heavy Crossbow",  type:"Weapon", weight:18,   desc:"1d10 piercing · Heavy, Range (100/400), Loading, Two-handed" },
-  { name:"Longbow",         type:"Weapon", weight:2,    desc:"1d8 piercing · Heavy, Range (150/600), Two-handed" },
-  // Armor — Light
-  { name:"Leather Armor",   type:"Armor",  weight:10,   desc:"AC 11 + DEX · Light armor" },
-  { name:"Padded Armor",    type:"Armor",  weight:8,    desc:"AC 11 + DEX · Light armor, Disadvantage on Stealth" },
-  { name:"Studded Leather", type:"Armor",  weight:13,   desc:"AC 12 + DEX · Light armor" },
-  // Armor — Medium
-  { name:"Chain Shirt",     type:"Armor",  weight:20,   desc:"AC 13 + DEX (max 2) · Medium armor" },
-  { name:"Hide Armor",      type:"Armor",  weight:12,   desc:"AC 12 + DEX (max 2) · Medium armor" },
-  { name:"Scale Mail",      type:"Armor",  weight:45,   desc:"AC 14 + DEX (max 2) · Medium armor, Disadvantage on Stealth" },
-  { name:"Breastplate",     type:"Armor",  weight:20,   desc:"AC 14 + DEX (max 2) · Medium armor" },
-  { name:"Half Plate",      type:"Armor",  weight:40,   desc:"AC 15 + DEX (max 2) · Medium armor, Disadvantage on Stealth" },
-  // Armor — Heavy
-  { name:"Ring Mail",       type:"Armor",  weight:40,   desc:"AC 14 · Heavy armor, Disadvantage on Stealth" },
-  { name:"Chain Mail",      type:"Armor",  weight:55,   desc:"AC 16 · Heavy armor, Disadvantage on Stealth, STR 13 required" },
-  { name:"Splint Armor",    type:"Armor",  weight:60,   desc:"AC 17 · Heavy armor, Disadvantage on Stealth, STR 15 required" },
-  { name:"Plate Armor",     type:"Armor",  weight:65,   desc:"AC 18 · Heavy armor, Disadvantage on Stealth, STR 15 required" },
-  { name:"Shield",          type:"Armor",  weight:6,    desc:"+2 AC" },
-  // Consumables
-  { name:"Health Potion",          type:"Consumable", weight:0.5, desc:"Restores 2d4+2 HP" },
-  { name:"Greater Health Potion",  type:"Consumable", weight:0.5, desc:"Restores 4d4+4 HP" },
-  { name:"Superior Health Potion", type:"Consumable", weight:0.5, desc:"Restores 8d4+8 HP" },
-  { name:"Supreme Health Potion",  type:"Consumable", weight:0.5, desc:"Restores 10d4+20 HP" },
-  { name:"Antitoxin",              type:"Consumable", weight:0,   desc:"Advantage on CON saves vs poison for 1 hour" },
-  { name:"Alchemist's Fire",       type:"Consumable", weight:1,   desc:"1d4 fire damage/round until extinguished (DC 10 DEX to put out)" },
-  { name:"Acid Vial",              type:"Consumable", weight:1,   desc:"2d6 acid damage on hit" },
-  { name:"Holy Water",             type:"Consumable", weight:1,   desc:"2d6 radiant damage to undead/fiends" },
-  { name:"Healer's Kit",           type:"Consumable", weight:3,   desc:"Stabilize dying creature without Medicine check · 10 uses" },
-  { name:"Rations",                type:"Consumable", weight:2,   desc:"One day of food and water" },
-  { name:"Torch",                  type:"Consumable", weight:1,   desc:"Bright light 20 ft, dim 20 ft · 1 hour" },
-  { name:"Oil Flask",              type:"Consumable", weight:1,   desc:"Coat surface or deal 5 fire damage if ignited" },
-  { name:"Arrows",                 type:"Consumable", weight:1,   desc:"Ammunition for bows · 20 arrows" },
-  { name:"Bolts",                  type:"Consumable", weight:1.5, desc:"Ammunition for crossbows · 20 bolts" },
-  // Tools
-  { name:"Thieves' Tools",   type:"Tool", weight:1, desc:"Pick locks and disarm traps" },
-  { name:"Herbalism Kit",    type:"Tool", weight:3, desc:"Craft antitoxins and healing potions" },
-  { name:"Disguise Kit",     type:"Tool", weight:3, desc:"Create disguises" },
-  { name:"Forgery Kit",      type:"Tool", weight:5, desc:"Create forged documents" },
-  { name:"Poisoner's Kit",   type:"Tool", weight:2, desc:"Craft and apply poisons" },
-  { name:"Navigator's Tools",type:"Tool", weight:2, desc:"Navigate by sea or land" },
-  // Misc / Gear
-  { name:"Arcane Focus",     type:"Misc", weight:1,  desc:"Spellcasting focus for arcane spells" },
-  { name:"Holy Symbol",      type:"Misc", weight:1,  desc:"Spellcasting focus for clerics and paladins" },
-  { name:"Druidic Focus",    type:"Misc", weight:2,  desc:"Spellcasting focus for druids" },
-  { name:"Spellbook",        type:"Misc", weight:3,  desc:"Contains wizard spells · 100 pages" },
-  { name:"Rope (Hempen)",    type:"Misc", weight:10, desc:"50 feet · supports up to 1,500 lbs" },
-  { name:"Rope (Silken)",    type:"Misc", weight:5,  desc:"50 feet · supports up to 1,500 lbs" },
-  { name:"Backpack",         type:"Misc", weight:5,  desc:"Holds 1 cubic foot / 30 lbs of gear" },
-  { name:"Bedroll",          type:"Misc", weight:7,  desc:"For resting outdoors" },
-  { name:"Tinderbox",        type:"Misc", weight:1,  desc:"Start a fire in one action" },
-  { name:"Grappling Hook",   type:"Misc", weight:4,  desc:"Thrown up to 25 ft to anchor rope" },
-  { name:"Crowbar",          type:"Misc", weight:5,  desc:"+2 to STR checks where leverage applies" },
-  { name:"Steel Mirror",     type:"Misc", weight:0.5,desc:"See around corners, reflect gaze attacks" },
-  { name:"Lantern (Bullseye)",type:"Misc",weight:2,  desc:"Bright light 60 ft cone, dim 60 ft · 6 hours/oil" },
-  { name:"Lantern (Hooded)", type:"Misc", weight:2,  desc:"Bright light 30 ft, dim 30 ft · 6 hours/oil" },
-  { name:"Compass",          type:"Misc", weight:0,  desc:"+1 to Survival checks for navigation" },
-  { name:"Lute",             type:"Misc", weight:2,  desc:"Musical instrument · Bardic Inspiration focus" },
-  { name:"Quiver",           type:"Misc", weight:1,  desc:"Holds 20 arrows or bolts" },
-  { name:"Explorer's Pack",  type:"Misc", weight:10, desc:"Backpack, bedroll, mess kit, tinderbox, 10 torches, 10 rations, waterskin, 50 ft hempen rope" },
-];
-
 const DICE = [
   { sides: 4,   label: "d4",   color: "bg-purple-700 hover:bg-purple-600", dot: "◆" },
   { sides: 6,   label: "d6",   color: "bg-blue-700 hover:bg-blue-600",     dot: "⬡" },
@@ -227,6 +36,23 @@ const DICE = [
 ];
 
 const QUICK_ACTIONS = ["I search the room", "I attack!", "I cast a spell", "I try to sneak", "I talk to them"];
+
+const BACKGROUNDS = [
+  { id: "acolyte",   label: "Acolyte",   desc: "Served in a temple" },
+  { id: "criminal",  label: "Criminal",  desc: "Life of crime and stealth" },
+  { id: "folk-hero", label: "Folk Hero", desc: "Champion of the common people" },
+  { id: "noble",     label: "Noble",     desc: "Born to wealth and privilege" },
+  { id: "sage",      label: "Sage",      desc: "Scholarly seeker of knowledge" },
+  { id: "soldier",   label: "Soldier",   desc: "Trained for war" },
+];
+
+const DM_THINKING = [
+  "The Dungeon Master ponders...",
+  "Rolling behind the screen...",
+  "Consulting the ancient tomes...",
+  "The fates are deciding...",
+  "Shadows stir in the darkness...",
+];
 
 const TAB_BUTTONS = [
   { id: "dice",      label: "🎲 Dice" },
@@ -327,6 +153,10 @@ function fmtSign(n) { return n >= 0 ? `+${n}` : `${n}`; }
 
 function getStartingInventory(charClass) {
   return (STARTING_INVENTORY[charClass] || STARTING_INVENTORY.default).map(item => ({ ...item, qty: item.qty || 1 }));
+}
+
+function getPortrait(cls) {
+  return CLASS_ICONS[cls] || "⚔️";
 }
 
 function generateStats() {
@@ -635,9 +465,9 @@ export default function App() {
   const [deathSaves, setDeathSaves] = useState({ successes: 0, failures: 0 });
   const [newItemName, setNewItemName] = useState("");
   const [newItemType, setNewItemType] = useState("Misc");
-  const [itemSuggestions, setItemSuggestions] = useState([]);
-  const [selectedDbItem, setSelectedDbItem] = useState(null);
   const [charStep, setCharStep] = useState(0);
+  const [charBackground, setCharBackground] = useState("acolyte");
+  const [thinkingIdx, setThinkingIdx] = useState(0);
   const chatRef = useRef(null);
   const mockIndex = useRef(0);
   const inputRef = useRef(null);
@@ -651,6 +481,11 @@ export default function App() {
     return () => window.speechSynthesis?.cancel();
   }, []);
 
+  useEffect(() => {
+    if (!loading) return;
+    const id = setInterval(() => setThinkingIdx(i => i + 1), 2000);
+    return () => clearInterval(id);
+  }, [loading]);
 
   // Auto-save whenever key state changes (only while in game)
   useEffect(() => {
@@ -689,7 +524,8 @@ export default function App() {
 
   function enterGame() {
     const maxHp = 10 + Math.floor((stats.CON - 10) / 2);
-    const char = { name: charName || `${charRace} ${charClass}`, class: charClass, race: charRace, stats, hp: maxHp, level: 1 };
+    const bg = BACKGROUNDS.find(b => b.id === charBackground);
+    const char = { name: charName || `${charRace} ${charClass}`, class: charClass, race: charRace, background: bg?.label || "Adventurer", stats, hp: maxHp, level: 1 };
     const id = Math.random().toString(36).substring(2, 12);
     setCharacter(char);
     setCurrentHp(maxHp);
@@ -755,7 +591,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: filteredMessages,
-          character: { name: character?.name, class: character?.class, race: character?.race }
+          character: { name: character?.name, class: character?.class, race: character?.race, background: character?.background }
         })
       });
       if (!response.ok) throw new Error(`Server error ${response.status}`);
@@ -892,7 +728,7 @@ export default function App() {
           <button onClick={() => setScreen("home")} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
           <div className="flex items-center gap-3">
             {sessionCode && <span className="text-amber-500 font-mono font-bold tracking-widest text-sm">{sessionCode}</span>}
-            <span className="text-zinc-600 text-sm">Step 1 of 3</span>
+            <span className="text-zinc-600 text-sm">Step 1 of 5</span>
           </div>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-8 gap-10">
@@ -921,7 +757,7 @@ export default function App() {
       <div className="min-h-screen bg-black text-white flex flex-col">
         <div className="flex items-center justify-between p-4">
           <button onClick={() => setCharStep(0)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">Step 2 of 3</span>
+          <span className="text-zinc-600 text-sm">Step 2 of 5</span>
         </div>
         <div className="px-4 py-2 flex flex-col flex-1 overflow-y-auto">
           <p className="text-zinc-500 text-lg mb-4 font-serif">Select a class…</p>
@@ -945,7 +781,7 @@ export default function App() {
       <div className="min-h-screen bg-black text-white flex flex-col">
         <div className="flex items-center justify-between p-4">
           <button onClick={() => setCharStep(1)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">Step 3 of 3</span>
+          <span className="text-zinc-600 text-sm">Step 3 of 5</span>
         </div>
         <div className="px-4 py-2 flex flex-col flex-1 overflow-y-auto">
           <p className="text-zinc-500 text-lg mb-4 font-serif">Choose your race…</p>
@@ -964,11 +800,11 @@ export default function App() {
     );
 
     // Step 3: Stats
-    return (
+    if (charStep === 3) return (
       <div className="min-h-screen bg-black text-white flex flex-col">
         <div className="flex items-center justify-between p-4">
           <button onClick={() => setCharStep(2)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">{charName} · {charClass}</span>
+          <span className="text-zinc-600 text-sm">Step 4 of 5 · {charName}</span>
         </div>
         <div className="px-4 py-2 flex-1 overflow-y-auto">
           <p className="text-zinc-500 text-lg mb-4 font-serif">Set your ability scores…</p>
@@ -976,7 +812,7 @@ export default function App() {
             <span className="text-zinc-600 text-sm">Roll 4d6, drop lowest</span>
             <button onClick={autoGenerateCharacter} className={btnSm}>🎲 Roll Stats</button>
           </div>
-          <div className="grid grid-cols-3 gap-2 mb-6">
+          <div className="grid grid-cols-3 gap-2 mb-4">
             {Object.entries(stats).map(([stat, val]) => (
               <div key={stat} className="flex flex-col items-center bg-zinc-900 border border-zinc-800 rounded-xl p-3">
                 <p className="text-zinc-500 text-xs mb-1">{stat}</p>
@@ -987,6 +823,42 @@ export default function App() {
                   <button onClick={() => setStats(s => ({ ...s, [stat]: Math.min(20, s[stat] + 1) }))} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-sm cursor-pointer flex items-center justify-center">+</button>
                 </div>
               </div>
+            ))}
+          </div>
+          <div className="mb-6">
+            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Starting Equipment</p>
+            <div className="flex flex-wrap gap-1">
+              {getStartingInventory(charClass).map((item, i) => (
+                <span key={i} className="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+                  {item.name}{item.qty > 1 ? ` ×${item.qty}` : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+          <button className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold text-lg rounded-2xl transition-colors cursor-pointer" onClick={() => setCharStep(4)}>
+            Next: Background →
+          </button>
+        </div>
+      </div>
+    );
+
+    // Step 4: Background
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col">
+        <div className="flex items-center justify-between p-4">
+          <button onClick={() => setCharStep(3)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
+          <span className="text-zinc-600 text-sm">Step 5 of 5 · {charName}</span>
+        </div>
+        <div className="px-4 py-2 flex-1 overflow-y-auto">
+          <p className="text-zinc-500 text-lg mb-1 font-serif">Choose your background…</p>
+          <p className="text-zinc-700 text-xs mb-4">Shapes how the DM narrates your story.</p>
+          <div className="grid grid-cols-2 gap-2 mb-6">
+            {BACKGROUNDS.map(bg => (
+              <button key={bg.id} onClick={() => setCharBackground(bg.id)}
+                className={`flex flex-col items-start px-4 py-4 rounded-xl border transition-colors cursor-pointer text-left ${charBackground === bg.id ? "bg-zinc-800 border-amber-500" : "bg-zinc-900 border-zinc-800 hover:bg-zinc-800"}`}>
+                <span className="text-white font-semibold text-sm mb-0.5">{bg.label}</span>
+                <span className="text-zinc-500 text-xs">{bg.desc}</span>
+              </button>
             ))}
           </div>
           <button className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold text-lg rounded-2xl transition-colors cursor-pointer" onClick={enterGame}>
@@ -1017,6 +889,10 @@ export default function App() {
               {t.label.split(" ")[0]}
             </button>
           ))}
+          <span className="text-lg" title={`${character?.race} ${character?.class}`}>{getPortrait(character?.class)}</span>
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-950 border border-red-800 text-xs font-bold text-red-300">
+            ❤️ {currentHp}/{character?.hp}
+          </div>
           <button onClick={() => setVoiceEnabled(!voiceEnabled)}
             className="w-9 h-9 rounded-full bg-zinc-900 flex items-center justify-center text-base cursor-pointer hover:bg-zinc-800 transition-colors">
             {voiceEnabled ? "🔊" : "🔇"}
@@ -1043,9 +919,7 @@ export default function App() {
         ))}
         {loading && (
           <div className="bg-zinc-900 rounded-2xl px-5 py-4">
-            <div className="flex gap-1.5 items-center">
-              {[0, 1, 2].map(i => <div key={i} className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}
-            </div>
+            <p className="text-amber-400/70 italic text-sm animate-pulse">{DM_THINKING[thinkingIdx % DM_THINKING.length]}</p>
           </div>
         )}
       </div>
@@ -1238,78 +1112,33 @@ export default function App() {
               <span>{inventory.length} items</span>
               <span>{inventory.reduce((a, i) => a + i.weight * i.qty, 0).toFixed(1)} lb total</span>
             </div>
-            {/* Add item with autocomplete */}
-            <div className="mt-2 pt-2 border-t border-zinc-800">
-              {/* Suggestions */}
-              {itemSuggestions.length > 0 && (
-                <div className="mb-1 rounded-lg border border-zinc-800 overflow-hidden">
-                  {itemSuggestions.map(item => (
-                    <button
-                      key={item.name}
-                      onClick={() => {
-                        setNewItemName(item.name);
-                        setNewItemType(item.type);
-                        setSelectedDbItem(item);
-                        setItemSuggestions([]);
-                      }}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-left transition-colors cursor-pointer border-b border-zinc-800 last:border-0"
-                    >
-                      <span className={`text-xs font-medium w-14 flex-shrink-0 ${TYPE_COLORS[item.type]}`}>{item.type}</span>
-                      <span className="text-white text-xs font-medium flex-shrink-0">{item.name}</span>
-                      <span className="text-zinc-600 text-xs truncate">{item.desc}</span>
-                      <span className="text-zinc-700 text-xs flex-shrink-0 ml-auto">{item.weight} lb</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {/* Selected item preview */}
-              {selectedDbItem && (
-                <div className="mb-1 px-2 py-1 bg-amber-900/20 border border-amber-900/40 rounded-lg">
-                  <p className="text-amber-400 text-xs">{selectedDbItem.desc} · {selectedDbItem.weight} lb</p>
-                </div>
-              )}
-              <div className="flex gap-1">
-                <input
-                  className="bg-black border border-zinc-800 rounded-lg px-2 py-1 text-white placeholder-zinc-700 text-xs focus:outline-none focus:border-amber-500 flex-1"
-                  placeholder="Search or add item…"
-                  value={newItemName}
-                  onChange={e => {
-                    const val = e.target.value;
-                    setNewItemName(val);
-                    setSelectedDbItem(null);
-                    if (val.trim().length >= 2) {
-                      const q = val.toLowerCase();
-                      setItemSuggestions(ITEM_DB.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6));
-                    } else {
-                      setItemSuggestions([]);
-                    }
-                  }}
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && newItemName.trim()) {
-                      const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
-                      setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
-                      setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
-                    }
-                    if (e.key === "Escape") setItemSuggestions([]);
-                  }}
-                />
-                {!selectedDbItem && (
-                  <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
-                    className="bg-black border border-zinc-800 rounded-lg px-1 py-1 text-white text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
-                    {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
-                  </select>
-                )}
-                <button
-                  onClick={() => {
-                    if (!newItemName.trim()) return;
-                    const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
-                    setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
-                    setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
-                  }}
-                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded-lg text-xs cursor-pointer transition-colors font-bold flex-shrink-0">
-                  Add
-                </button>
-              </div>
+            {/* Add item */}
+            <div className="mt-2 pt-2 border-t border-zinc-800 flex gap-1">
+              <input
+                className="bg-black border border-zinc-800 rounded-lg px-2 py-1 text-white placeholder-zinc-700 text-xs focus:outline-none focus:border-amber-500 flex-1"
+                placeholder="Add item…"
+                value={newItemName}
+                onChange={e => setNewItemName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && newItemName.trim()) {
+                    setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
+                    setNewItemName("");
+                  }
+                }}
+              />
+              <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
+                className="bg-black border border-zinc-800 rounded-lg px-1 py-1 text-white text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
+                {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
+              </select>
+              <button
+                onClick={() => {
+                  if (!newItemName.trim()) return;
+                  setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
+                  setNewItemName("");
+                }}
+                className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded-lg text-xs cursor-pointer transition-colors font-bold">
+                Add
+              </button>
             </div>
           </div>
         </div>
@@ -1317,36 +1146,11 @@ export default function App() {
 
       {/* Notes Panel */}
       {activeTab === "notes" && (
-        <div className="flex-shrink-0 border-t border-zinc-800" style={{ maxHeight: "300px", background: "#0f0a04" }}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-amber-900/30">
-            <div className="flex items-center gap-2">
-              <span className="text-amber-600 text-sm">📜</span>
-              <span className="text-amber-700 text-xs font-serif tracking-widest uppercase">Quest Log</span>
-              {character && <span className="text-amber-900 text-xs font-serif">— {character.name}</span>}
-            </div>
-            <div className="flex gap-1">
-              {["Quest", "NPC", "Item", "Clue"].map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => setNotes(n => n + (n && !n.endsWith("\n") ? "\n" : "") + `\n[ ${tag} ] `)}
-                  className="text-xs text-amber-800 hover:text-amber-500 border border-amber-900/40 hover:border-amber-700 rounded px-1.5 py-0.5 cursor-pointer transition-colors font-serif"
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-          {/* Textarea */}
+        <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "260px" }}>
           <textarea
-            className="w-full resize-none focus:outline-none font-serif text-sm leading-relaxed px-4 py-3"
-            style={{
-              height: "200px",
-              background: "#0f0a04",
-              color: "#c8a96e",
-              caretColor: "#c8a96e",
-            }}
-            placeholder={"Write your notes here...\n\nUse the tags above to organize quests, NPCs, items, and clues."}
+            className="w-full bg-black text-zinc-200 text-sm p-4 resize-none focus:outline-none placeholder-zinc-800 font-serif"
+            style={{ height: "180px" }}
+            placeholder="Quest notes, NPC names, clues, loot to track…"
             value={notes}
             onChange={e => setNotes(e.target.value)}
           />

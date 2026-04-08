@@ -26,7 +26,7 @@ When a player's message contains a dice roll in brackets like [Rolled d20: **17*
 - 15-19: Clear success
 - 20 (Critical Hit): Exceptional, memorable success beyond all expectations
 
-Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${character.class || ""}`.trim();
+Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${character.class || ""}${character.background ? `, Background: ${character.background}` : ""}`.trim();
 
   const apiMessages = messages
     .filter((m) => m.role === "player")
