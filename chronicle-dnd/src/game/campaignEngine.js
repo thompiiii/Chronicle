@@ -74,6 +74,12 @@ export function chooseOption(gameState, choiceIndex) {
 export async function resolveStep(gameState, playerInput) {
   const step = gameState.campaign.steps[gameState.currentStep];
 
+  console.log({
+    currentStep: gameState.currentStep,
+    stepType:    step.type,
+    enemyHP:     gameState.enemy?.hp,
+  });
+
   // ── End ─────────────────────────────────────────────────────────────────
   if (step.type === "end") {
     return {
