@@ -80,6 +80,14 @@ export async function resolveStep(gameState, playerInput) {
     enemyHP:     gameState.enemy?.hp,
   });
 
+  // ── Choice ───────────────────────────────────────────────────────────────
+  if (step.type === "choice") {
+    return {
+      ...gameState,
+      narration: "Choose an option to continue.",
+    };
+  }
+
   // ── End ─────────────────────────────────────────────────────────────────
   if (step.type === "end") {
     return {
