@@ -131,29 +131,40 @@ export async function resolveStep(gameState, playerInput) {
     const combatLog = [];
 
     // ── Player turn ──────────────────────────────────────────────────────
-    const playerRoll = rollDie(20);
-    const isCrit     = playerRoll === 20;
-    const isFumble   = playerRoll === 1;
-    const dc         = step.enemy.difficulty + (action === "heavy" ? 3 : 0);
-    const playerHit  = !isFumble && (isCrit || playerRoll >= dc);
-
+    let playerRoll = 0;
+    let isCrit     = false;
+    let isFumble   = false;
+    let playerHit  = false;
     let playerDamage = 0;
-    if (playerHit) {
-      playerDamage = action === "heavy"
-        ? gameState.player.attack * 2
-        : rollDamage(gameState.player.attack);
-      if (isCrit) playerDamage *= 2;
-    }
-    const fumbleDamage = isFumble ? rollDie(2) : 0;
-    enemy.hp = Math.max(0, enemy.hp - playerDamage);
+    let fumbleDamage = 0;
 
-    combatLog.push(
-      isCrit   ? `⚡ CRITICAL! You ${action} (${playerRoll} vs ${dc}) → HIT` :
-      isFumble ? `💀 FUMBLE! You ${action} (${playerRoll} vs ${dc}) → MISS` :
-                 `You ${action} (${playerRoll} vs ${dc}) → ${playerHit ? "HIT" : "MISS"}`
-    );
-    if (playerHit)    combatLog.push(`You deal ${playerDamage} damage${isCrit ? " (CRIT!)" : ""}`);
-    if (fumbleDamage) combatLog.push(`You hurt yourself for ${fumbleDamage} damage`);
+    if (action === "defend") {
+      // Defending skips the player attack — just brace for the enemy turn
+      combatLog.push(`🛡️ You take a defensive stance`);
+    } else {
+      playerRoll = rollDie(20);
+      isCrit     = playerRoll === 20;
+      isFumble   = playerRoll === 1;
+      const dc   = step.enemy.difficulty + (action === "heavy" ? 3 : 0);
+      playerHit  = !isFumble && (isCrit || playerRoll >= dc);
+
+      if (playerHit) {
+        playerDamage = action === "heavy"
+          ? gameState.player.attack * 2
+          : rollDamage(gameState.player.attack);
+        if (isCrit) playerDamage *= 2;
+      }
+      fumbleDamage = isFumble ? rollDie(2) : 0;
+      enemy.hp = Math.max(0, enemy.hp - playerDamage);
+
+      combatLog.push(
+        isCrit   ? `⚡ CRITICAL! You ${action} (${playerRoll} vs ${dc}) → HIT` :
+        isFumble ? `💀 FUMBLE! You ${action} (${playerRoll} vs ${dc}) → MISS` :
+                   `You ${action} (${playerRoll} vs ${dc}) → ${playerHit ? "HIT" : "MISS"}`
+      );
+      if (playerHit)    combatLog.push(`You deal ${playerDamage} damage${isCrit ? " (CRIT!)" : ""}`);
+      if (fumbleDamage) combatLog.push(`You hurt yourself for ${fumbleDamage} damage`);
+    }
 
     // ── Enemy turn ───────────────────────────────────────────────────────
     let playerHp  = gameState.player.hp - fumbleDamage;
@@ -191,7 +202,7 @@ export async function resolveStep(gameState, playerInput) {
     }
 
     const lastRoll = {
-      playerRoll, playerHit, playerDc: dc, isCrit, isFumble, action,
+      playerRoll, playerHit, isCrit, isFumble, action,
       enemyRoll: enemyTurn.roll, enemyResult: enemyTurn.result,
     };
 

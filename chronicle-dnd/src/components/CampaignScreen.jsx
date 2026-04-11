@@ -38,14 +38,20 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
       {/* Roll badges — shown after a combat round */}
       {lastRoll && step.type === "combat" && (
         <div className="flex gap-2">
-          <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${
-            lastRoll.isCrit   ? "text-yellow-300 border-yellow-700 bg-yellow-950/40" :
-            lastRoll.isFumble ? "text-red-400 border-red-900 bg-red-950/40" :
-            lastRoll.playerHit ? "text-green-400 border-green-900 bg-green-950/40" :
-                                 "text-zinc-400 border-zinc-800 bg-zinc-950/40"
-          }`}>
-            {lastRoll.isCrit ? "⚡" : lastRoll.isFumble ? "💀" : "⚔️"} {lastRoll.playerRoll} vs {lastRoll.playerDc} — {lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE" : lastRoll.playerHit ? "HIT" : "MISS"}
-          </div>
+          {lastRoll.action === "defend" ? (
+            <div className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono text-blue-300 border-blue-800 bg-blue-950/40">
+              🛡️ Defensive stance — incoming halved
+            </div>
+          ) : (
+            <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${
+              lastRoll.isCrit   ? "text-yellow-300 border-yellow-700 bg-yellow-950/40" :
+              lastRoll.isFumble ? "text-red-400 border-red-900 bg-red-950/40" :
+              lastRoll.playerHit ? "text-green-400 border-green-900 bg-green-950/40" :
+                                   "text-zinc-400 border-zinc-800 bg-zinc-950/40"
+            }`}>
+              {lastRoll.isCrit ? "⚡" : lastRoll.isFumble ? "💀" : "⚔️"} {lastRoll.playerRoll} — {lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE" : lastRoll.playerHit ? "HIT" : "MISS"}
+            </div>
+          )}
           <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${
             lastRoll.enemyResult === "miss"  ? "text-zinc-400 border-zinc-800 bg-zinc-950/40" :
             lastRoll.enemyResult === "heavy" ? "text-orange-400 border-orange-900 bg-orange-950/40" :
