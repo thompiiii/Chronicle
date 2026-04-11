@@ -61,16 +61,35 @@ function buildTurnMessage(turnResult) {
 export async function getNarration(arg1, arg2, callbacks = {}) {
   // ── Campaign exploration style ─────────────────────────────────────────
   if (arg1 && "step" in arg1) {
-    const { step, playerInput, gameState } = arg1;
+    const { step, playerInput, gameState, roll, success } = arg1;
     const { onChunk, onError } = arg2 ?? {};
-    const text = [
+
+    const lines = [
       `Scene: ${step.title}`,
       `Scene description: ${step.text}`,
       `Player action: "${playerInput}"`,
-      "",
-      "Narrate the player's action in this scene atmospherically. 2–4 sentences. End with 'What do you do?'",
-    ].join("\n");
-    return streamNarration({ text, gameState: gameState ?? {}, onChunk, onError });
+    ];
+
+    if (roll !== undefined) {
+      // Combat round — outcome already determined, AI narrates only
+      lines.push(
+        `d20 roll: ${roll} vs difficulty ${step.enemy?.difficulty} — ${success ? "HIT" : "MISS"}`,
+        success
+          ? `The player hit for ${gameState.player?.attack} damage.`
+          : "The attack missed.",
+        gameState.enemy
+          ? `The ${step.enemy?.name} has ${gameState.enemy.hp} HP remaining and retaliates for ${step.enemy?.attack} damage.`
+          : `The ${step.enemy?.name} has been defeated.`,
+        "",
+        success
+          ? "Narrate the hit dramatically. Describe the enemy's reaction."
+          : "Narrate the miss — near miss, deflection, stumble. Keep tension high.",
+      );
+    } else {
+      lines.push("", "Narrate the player's action atmospherically. 2–4 sentences. End with 'What do you do?'");
+    }
+
+    return streamNarration({ text: lines.join("\n"), gameState: gameState ?? {}, onChunk, onError });
   }
 
   // ── Free-play turn style ───────────────────────────────────────────────

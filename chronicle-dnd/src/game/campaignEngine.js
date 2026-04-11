@@ -118,6 +118,53 @@ function applyLoot(player, loot) {
   return { ...player, gold, inventory };
 }
 
+// ── Combat ─────────────────────────────────────────────────────────────────
+// One round of campaign combat — player rolls, enemy retaliates, narration follows.
+// Returns new gameState with narration attached.
+
+export async function resolveCombatStep(gameState, playerInput) {
+  const step = gameState.campaign.steps[gameState.currentStep];
+  if (step.type !== "combat") throw new Error("resolveCombatStep called on non-combat step");
+
+  // Spawn enemy on first round if not yet in state
+  const enemy = gameState.enemy
+    ? { ...gameState.enemy }
+    : { ...step.enemy, maxHp: step.enemy.hp };
+
+  // Player attacks — roll d20 vs step.enemy.difficulty
+  const roll    = rollDie(20);
+  const success = roll >= step.enemy.difficulty;
+
+  if (success) {
+    enemy.hp -= gameState.player.attack;
+  }
+
+  // Enemy retaliates if still alive
+  let playerHp = gameState.player.hp;
+  if (enemy.hp > 0) {
+    playerHp -= enemy.attack;
+  }
+
+  // Build intermediate state for narration context
+  let next = {
+    ...gameState,
+    player: { ...gameState.player, hp: Math.max(0, playerHp) },
+    enemy:  enemy.hp > 0 ? enemy : null,
+  };
+
+  // Advance step on resolution
+  if (enemy.hp <= 0) {
+    next.player = { ...next.player, gold: next.player.gold + (step.enemy.xp ?? 0) };
+    next.currentStep = step.onVictory;
+  } else if (playerHp <= 0) {
+    next.currentStep = step.onDefeat;
+  }
+
+  const narration = await getNarration({ step, playerInput, gameState: next, roll, success });
+
+  return { ...next, narration };
+}
+
 // ── Exploration ────────────────────────────────────────────────────────────
 // Exploration steps hand the player's input to the AI for free narration,
 // then automatically advance to step.next. No dice rolled.
