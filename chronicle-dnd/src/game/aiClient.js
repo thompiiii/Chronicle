@@ -113,7 +113,10 @@ export async function getNarration(turnResult, gameState, { onChunk, onError } =
 
     return narration;
   } catch (err) {
-    onError?.(err.message);
-    throw err;
+    const msg = err.message === "Failed to fetch" || err.message === "Load failed"
+      ? "Could not reach the server. Check your connection and try again."
+      : err.message;
+    onError?.(msg);
+    return null; // error already surfaced via onError — don't bubble up a duplicate
   }
 }
