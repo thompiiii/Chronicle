@@ -35,11 +35,14 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         </div>
       </div>
 
-      {/* Roll badge — shown after a combat round */}
+      {/* Roll badges — shown after a combat round */}
       {lastRoll && step.type === "combat" && (
-        <div className="flex justify-center">
-          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-mono ${lastRoll.success ? "text-green-400 border-green-900 bg-green-950/40" : "text-red-400 border-red-900 bg-red-950/40"}`}>
-            🎲 d20: {lastRoll.roll} vs DC {lastRoll.dc} — {lastRoll.success ? "HIT" : "MISS"}
+        <div className="flex gap-2">
+          <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${lastRoll.playerHit ? "text-green-400 border-green-900 bg-green-950/40" : "text-zinc-400 border-zinc-800 bg-zinc-950/40"}`}>
+            ⚔️ {lastRoll.playerRoll} vs {lastRoll.playerDc} — {lastRoll.playerHit ? "HIT" : "MISS"}
+          </div>
+          <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${lastRoll.enemyHit ? "text-red-400 border-red-900 bg-red-950/40" : "text-zinc-400 border-zinc-800 bg-zinc-950/40"}`}>
+            👺 {lastRoll.enemyRoll} vs {lastRoll.enemyDc} — {lastRoll.enemyHit ? "HIT" : "MISS"}
           </div>
         </div>
       )}

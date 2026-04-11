@@ -22,6 +22,7 @@ export function createCampaignState(campaign, playerOverrides = {}) {
       hp:        20,
       maxHp:     20,
       attack:    5,
+      defense:   10,
       inventory: [],
       gold:      0,
       ...campaign.playerOverrides,
@@ -103,21 +104,22 @@ export async function resolveStep(gameState, playerInput) {
       ? { ...gameState.enemy }
       : { ...step.enemy, maxHp: step.enemy.hp };
 
-    const roll    = rollDie(20);
-    const success = roll >= step.enemy.difficulty;
-
-    if (success) {
+    // ── Player turn ──────────────────────────────────────────────────────
+    const playerRoll = rollDie(20);
+    const playerHit  = playerRoll >= step.enemy.difficulty;
+    if (playerHit) {
       enemy.hp = Math.max(0, enemy.hp - gameState.player.attack);
     }
 
-    let playerHp = gameState.player.hp;
-    if (enemy.hp > 0) {
-      playerHp -= enemy.attack;
-    }
+    // ── Enemy turn ───────────────────────────────────────────────────────
+    const playerDefense = gameState.player.defense ?? 10;
+    const enemyRoll     = rollDie(20);
+    const enemyHit      = enemy.hp > 0 && enemyRoll >= playerDefense;
+    const playerHp      = Math.max(0, gameState.player.hp - (enemyHit ? enemy.attack : 0));
 
     let next = {
       ...gameState,
-      player: { ...gameState.player, hp: Math.max(0, playerHp) },
+      player: { ...gameState.player, hp: playerHp },
       enemy:  enemy.hp > 0 ? enemy : null,
     };
 
@@ -128,8 +130,13 @@ export async function resolveStep(gameState, playerInput) {
       next = goToStep(next, step.onDefeat);
     }
 
-    const narration = await getNarration({ step, playerInput, gameState: next, roll, success });
-    return { ...next, narration, lastRoll: { roll, success, dc: step.enemy.difficulty } };
+    const lastRoll = {
+      playerRoll, playerHit, playerDc: step.enemy.difficulty,
+      enemyRoll,  enemyHit,  enemyDc:  playerDefense,
+    };
+
+    const narration = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit });
+    return { ...next, narration, lastRoll };
   }
 
   // ── Loot ─────────────────────────────────────────────────────────────────
