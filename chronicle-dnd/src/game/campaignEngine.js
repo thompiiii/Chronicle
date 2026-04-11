@@ -137,8 +137,9 @@ export async function resolveStep(gameState, playerInput) {
       enemyRoll,  enemyHit,  enemyDc:  playerDefense,
     };
 
-    const narration = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit });
-    return { ...next, narration, lastRoll };
+    const combatOver = enemy.hp <= 0 || playerHp <= 0;
+    const narration  = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit });
+    return { ...next, narration: combatOver ? null : narration, lastRoll };
   }
 
   // ── Loot ─────────────────────────────────────────────────────────────────
