@@ -12,6 +12,7 @@
 // ──────────────────────────────────────────────────────────────────────────
 
 import { rollDie } from "./gameEngine";
+import { getNarration } from "./aiClient";
 
 // ── Factory ────────────────────────────────────────────────────────────────
 // Build the initial state for a campaign. Call once when the player starts.
@@ -116,6 +117,30 @@ function applyLoot(player, loot) {
   const inventory = [...(player.inventory ?? []), ...(loot.items ?? [])];
   return { ...player, gold, inventory };
 }
+
+// ── Exploration ────────────────────────────────────────────────────────────
+// Exploration steps hand the player's input to the AI for free narration,
+// then automatically advance to step.next. No dice rolled.
+
+export async function resolveExplorationStep(gameState, playerInput) {
+  const step = gameState.campaign.steps[gameState.currentStep];
+  if (step.type !== "exploration") throw new Error("resolveExplorationStep called on non-exploration step");
+
+  const narration = await getNarration({ step, playerInput, gameState });
+
+  return {
+    ...gameState,
+    narration,
+    currentStep: step.next,
+  };
+}
+
+// ── React integration ──────────────────────────────────────────────────────
+// Drop this into your component — moves to a scene choice without AI:
+//
+//   function handleChoice(nextStep) {
+//     setGameState(prev => ({ ...prev, currentStep: nextStep }))
+//   }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

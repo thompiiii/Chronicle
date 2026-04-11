@@ -53,8 +53,30 @@ function buildTurnMessage(turnResult) {
 // Streams narration from the API. Returns the full narration string.
 // Calls onChunk(text) for each streamed token (for live display if wanted).
 // Calls onError(message) if something goes wrong.
+//
+// Two call styles:
+//   getNarration(turnResult, gameState, callbacks)        — free-play mode
+//   getNarration({ step, playerInput, gameState }, callbacks) — campaign exploration
 
-export async function getNarration(turnResult, gameState, { onChunk, onError } = {}) {
+export async function getNarration(arg1, arg2, callbacks = {}) {
+  // ── Campaign exploration style ─────────────────────────────────────────
+  if (arg1 && "step" in arg1) {
+    const { step, playerInput, gameState } = arg1;
+    const { onChunk, onError } = arg2 ?? {};
+    const text = [
+      `Scene: ${step.title}`,
+      `Scene description: ${step.text}`,
+      `Player action: "${playerInput}"`,
+      "",
+      "Narrate the player's action in this scene atmospherically. 2–4 sentences. End with 'What do you do?'",
+    ].join("\n");
+    return streamNarration({ text, gameState: gameState ?? {}, onChunk, onError });
+  }
+
+  // ── Free-play turn style ───────────────────────────────────────────────
+  const turnResult = arg1;
+  const gameState  = arg2;
+  const { onChunk, onError } = callbacks;
   const { character, messages = [] } = gameState;
 
   // Include the last 2 DM messages as scene context so Claude knows what's happening
@@ -77,11 +99,28 @@ export async function getNarration(turnResult, gameState, { onChunk, onError } =
     mode: "narration", // tells api/chat.js to use the strict narration system prompt
   };
 
+  return streamNarration({ payload, onChunk, onError });
+}
+
+// ── Shared SSE stream helper ───────────────────────────────────────────────
+async function streamNarration({ text, payload, gameState, onChunk, onError }) {
+  // Build payload from raw text when called from the exploration path
+  const body = payload ?? {
+    messages: [{ role: "player", text }],
+    character: {
+      name:       gameState?.character?.name,
+      class:      gameState?.character?.class,
+      race:       gameState?.character?.race,
+      background: gameState?.character?.background,
+    },
+    mode: "narration",
+  };
+
   try {
     const response = await fetch("/api/chat", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify(payload),
+      body:    JSON.stringify(body),
     });
 
     if (!response.ok) throw new Error(`Server error ${response.status}`);
@@ -117,6 +156,6 @@ export async function getNarration(turnResult, gameState, { onChunk, onError } =
       ? "Could not reach the server. Check your connection and try again."
       : err.message;
     onError?.(msg);
-    return null; // error already surfaced via onError — don't bubble up a duplicate
+    return null;
   }
 }
