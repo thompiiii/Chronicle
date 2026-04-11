@@ -64,32 +64,25 @@ export async function getNarration(arg1, arg2, callbacks = {}) {
     const { step, playerInput, gameState, roll, success } = arg1;
     const { onChunk, onError } = arg2 ?? {};
 
-    const lines = [
-      `Scene: ${step.title}`,
-      `Scene description: ${step.text}`,
-      `Player action: "${playerInput}"`,
-    ];
+    const enemyHp = gameState.enemy?.hp ?? 0;
+    const text = [
+      `Current scenario: ${step.title}`,
+      `Description: ${step.text}`,
+      ``,
+      `Player action: ${playerInput}`,
+      ``,
+      `Game facts:`,
+      `- Player HP: ${gameState.player?.hp}`,
+      roll !== undefined ? `- Enemy HP: ${enemyHp}`         : null,
+      roll !== undefined ? `- Roll: ${roll}`                 : null,
+      roll !== undefined ? `- Result: ${success ? "success" : "failure"}` : null,
+      ``,
+      `Rules:`,
+      `- Do NOT change outcomes`,
+      `- Only narrate what already happened`,
+    ].filter(line => line !== null).join("\n");
 
-    if (roll !== undefined) {
-      // Combat round — outcome already determined, AI narrates only
-      lines.push(
-        `d20 roll: ${roll} vs difficulty ${step.enemy?.difficulty} — ${success ? "HIT" : "MISS"}`,
-        success
-          ? `The player hit for ${gameState.player?.attack} damage.`
-          : "The attack missed.",
-        gameState.enemy
-          ? `The ${step.enemy?.name} has ${gameState.enemy.hp} HP remaining and retaliates for ${step.enemy?.attack} damage.`
-          : `The ${step.enemy?.name} has been defeated.`,
-        "",
-        success
-          ? "Narrate the hit dramatically. Describe the enemy's reaction."
-          : "Narrate the miss — near miss, deflection, stumble. Keep tension high.",
-      );
-    } else {
-      lines.push("", "Narrate the player's action atmospherically. 2–4 sentences. End with 'What do you do?'");
-    }
-
-    return streamNarration({ text: lines.join("\n"), gameState: gameState ?? {}, onChunk, onError });
+    return streamNarration({ text, gameState: gameState ?? {}, onChunk, onError });
   }
 
   // ── Free-play turn style ───────────────────────────────────────────────
