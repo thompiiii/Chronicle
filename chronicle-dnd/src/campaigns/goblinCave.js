@@ -48,12 +48,27 @@ export const goblinCaveCampaign = {
       title: "Goblin Patrol",
       text:  "Two goblins spring from behind the torch-sticks, screeching. They weren't expecting someone bold enough to walk in the front.",
       enemy: { name: "Goblin Patrol (×2)", hp: 10, attack: 3, xp: 50, difficulty: 11 },
-      onVictory: "inner-cave",
+      onVictory: "patrol-loot",
       onDefeat:  "defeat",
     },
 
+    // ── 2a loot — after patrol ─────────────────────────────────────────────
+    "patrol-loot": {
+      id:    "patrol-loot",
+      type:  "loot",
+      title: "Search the Bodies",
+      text:  "You crouch over the fallen goblins. Between them you find a small coin purse, a dented shortsword, and — tucked inside one goblin's boot — a tarnished iron key with a tag that reads 'STOREROOM' scratched in crude letters.",
+      loot: {
+        gold:  8,
+        items: [
+          { name: "Shortsword",    type: "Weapon",     desc: "1d6 piercing · looted from the patrol" },
+          { name: "Storeroom Key", type: "Misc",       desc: "A tarnished iron key — opens something deeper in the cave" },
+        ],
+      },
+      next: "inner-cave",
+    },
+
     // ── 2b. Back entrance → easier path ───────────────────────────────────
-    "back-entrance": {
       id:    "back-entrance",
       type:  "choice",
       title: "The Crack in the Rock",
@@ -96,7 +111,23 @@ export const goblinCaveCampaign = {
         { text: "\"I'm here for the strongbox. Stand aside.\"", next: "chieftain" },
         { text: "Attack without talking",                       next: "chieftain" },
         { text: "Search for another way around",                next: "side-passage" },
+        { text: "Try the iron key on the storeroom door",       next: "storeroom" },
       ],
+    },
+
+    storeroom: {
+      id:    "storeroom",
+      type:  "loot",
+      title: "The Storeroom",
+      text:  "The key turns with a satisfying click. Inside: crates of stolen merchant goods and a wooden chest. The chest holds a health potion, a small sack of gold, and a rolled-up map with a red X marked near the cave's lower level.",
+      loot: {
+        gold:  20,
+        items: [
+          { name: "Health Potion",   type: "Consumable", desc: "Restores 2d4+2 HP" },
+          { name: "Treasure Map",    type: "Misc",       desc: "Marks a location in the cave's lower level" },
+        ],
+      },
+      next: "chieftain",
     },
 
     "side-passage": {
