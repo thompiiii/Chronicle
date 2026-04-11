@@ -2,6 +2,27 @@
 
 ---
 
+## v1.1.0 — Game Engine & QOL
+*April 2026*
+
+### Game Engine Architecture
+- Introduced `gameEngine.js` — all rules logic (dice, outcomes, stat modifiers) now lives in code, not in the AI
+- AI is restricted to narration only; it cannot change success/failure or roll dice
+- `processTurn()` resolves intent detection, d20 rolls, modifiers, and outcome (`critical` / `success` / `partial` / `failure` / `fumble`) before the AI is ever called
+- `shouldRoll()` gate — only contested actions trigger a dice roll (attacks, stealth, social checks, spells, skill checks like Search); exploration and movement narrate freely without rolling
+- Roll results shown as a color-coded pill in chat (yellow = crit, green = success, amber = partial, zinc = failure, red = fumble)
+- Fumble on attack deals 1 point of self-inflicted damage
+- Damage dice on hit — each class rolls its own die (d12 Barbarian → d4 Wizard); crits roll twice
+
+### QOL Improvements
+- **HP pill in header** — `❤️ current/max` always visible during play, no more tab-switching to check HP
+- **Character portrait** — class emoji shown in game header next to HP
+- **Background selection** — 5th character creation step (Acolyte, Criminal, Folk Hero, Noble, Sage, Soldier); background is passed to the DM for richer narrative flavor
+- **Inventory preview** — starting equipment shown on the stats step before confirming character
+- **Immersive loading indicator** — cycles through D&D-flavored messages ("Rolling behind the screen…", "Consulting the ancient tomes…") while waiting for DM response
+
+---
+
 ## v1.0.0 — Initial Release
 *April 2026*
 
