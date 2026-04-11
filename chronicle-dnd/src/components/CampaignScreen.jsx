@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { resolveStep } from "../game/campaignEngine";
+import { resolveStep, createCampaignState } from "../game/campaignEngine";
 
 export default function CampaignScreen({ gameState, setGameState, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -136,15 +136,21 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
 
       {/* End state */}
       {gameState.gameOver && (
-        <div className="text-center mt-4">
-          <p className="text-zinc-500 text-sm mb-3">
+        <div className="flex flex-col gap-3 mt-4">
+          <p className="text-center text-zinc-500 text-sm">
             {step.outcome === "victory" ? "🏆 Campaign complete" : "💀 Defeated"}
           </p>
           <button
-            onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl cursor-pointer transition-colors"
+            onClick={() => setGameState(createCampaignState(gameState.campaign))}
+            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl cursor-pointer transition-colors"
           >
-            Play Again
+            Try Again
+          </button>
+          <button
+            onClick={onBack}
+            className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold rounded-xl cursor-pointer transition-colors"
+          >
+            ← Back to Menu
           </button>
         </div>
       )}
