@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { resolveStep, createCampaignState } from "../game/campaignEngine";
+import { resolveStep, createCampaignState, goToStep } from "../game/campaignEngine";
 
 export default function CampaignScreen({ gameState, setGameState, onBack }) {
   const [loading, setLoading] = useState(false);
@@ -8,7 +8,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
   const step = gameState.campaign.steps[gameState.currentStep];
 
   function handleChoice(nextStep) {
-    setGameState(prev => ({ ...prev, currentStep: nextStep }));
+    setGameState(prev => goToStep(prev, nextStep));
   }
 
   async function handleAction(overrideInput) {
