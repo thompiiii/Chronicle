@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { processTurn, applyTurnToState, formatRollSummary, shouldRoll } from "./game/gameEngine";
 import { getNarration } from "./game/aiClient";
+import { createCampaignState } from "./game/campaignEngine";
+import { goblinCaveCampaign } from "./campaigns/goblinCave";
+import CampaignScreen from "./components/CampaignScreen";
 
 const CLASSES = ["Barbarian","Bard","Cleric","Druid","Fighter","Monk","Paladin","Ranger","Rogue","Sorcerer","Warlock","Wizard"];
 const RACES = ["Human","Elf","Dwarf","Halfling","Gnome","Half-Orc","Tiefling","Dragonborn","Half-Elf","Aasimar"];
@@ -557,6 +560,7 @@ export default function App() {
   const [gold, setGold] = useState(10);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [campaignId, setCampaignId] = useState(null);
+  const [campaignState, setCampaignState] = useState(null);
   const [justSaved, setJustSaved] = useState(false);
   const [currentHp, setCurrentHp] = useState(10);
   const [usedSlots, setUsedSlots] = useState({});
@@ -823,6 +827,15 @@ export default function App() {
             >
               ▶ BEGIN
             </button>
+            <button
+              className="w-full py-3 bg-transparent border border-zinc-800 hover:border-amber-700 text-zinc-400 hover:text-amber-400 rounded-2xl font-semibold transition-colors cursor-pointer"
+              onClick={() => {
+                setCampaignState(createCampaignState(goblinCaveCampaign));
+                setScreen("campaign");
+              }}
+            >
+              ⚔️ Goblin Cave
+            </button>
             {hasSaves && (
               <button
                 className="w-full py-3 bg-transparent border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white rounded-2xl font-semibold transition-colors cursor-pointer"
@@ -857,6 +870,14 @@ export default function App() {
       </div>
     );
   }
+
+  if (screen === "campaign") return (
+    <CampaignScreen
+      gameState={campaignState}
+      setGameState={setCampaignState}
+      onBack={() => setScreen("home")}
+    />
+  );
 
   if (screen === "character") {
     // Step 0: Name

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { resolveStep } from "../game/campaignEngine";
 
-export default function CampaignScreen({ gameState, setGameState }) {
+export default function CampaignScreen({ gameState, setGameState, onBack }) {
   const [loading, setLoading] = useState(false);
   const [input, setInput] = useState("");
 
@@ -23,10 +23,13 @@ export default function CampaignScreen({ gameState, setGameState }) {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col px-5 py-6 gap-4">
 
-      {/* Step header */}
-      <div>
-        <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">{step.type}</p>
-        <h2 className="text-xl font-serif font-bold">{step.title}</h2>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
+        <div className="text-right">
+          <p className="text-zinc-500 text-xs uppercase tracking-widest">{step.type}</p>
+          <h2 className="text-base font-serif font-bold">{step.title}</h2>
+        </div>
       </div>
 
       {/* Narrative text */}
