@@ -124,6 +124,12 @@ export async function resolveStep(gameState, playerInput) {
     return { ...next, narration };
   }
 
+  // ── Loot ─────────────────────────────────────────────────────────────────
+  if (step.type === "loot") {
+    const narration = await getNarration({ step, playerInput, gameState });
+    return goToStep({ ...gameState, narration }, step.next);
+  }
+
   // ── Exploration ──────────────────────────────────────────────────────────
   if (step.type === "exploration") {
     const narration = await getNarration({ step, playerInput, gameState, roll: undefined, success: undefined });
