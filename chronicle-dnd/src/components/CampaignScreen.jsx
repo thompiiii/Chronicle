@@ -90,6 +90,32 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         </div>
       )}
 
+      {/* Loot items */}
+      {step.type === "loot" && step.loot && (
+        <div className="flex flex-wrap gap-2">
+          {step.loot.gold > 0 && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-yellow-950 border border-yellow-800 text-yellow-300 font-mono">
+              +{step.loot.gold} gold
+            </span>
+          )}
+          {(step.loot.items ?? []).map((item, i) => (
+            <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-300">
+              {item.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Loot continue */}
+      {step.type === "loot" && (
+        <button
+          onClick={() => handleChoice(step.next)}
+          className="w-full py-3 bg-zinc-900 border border-zinc-700 hover:border-amber-500 hover:bg-zinc-800 text-zinc-200 font-semibold rounded-xl transition-colors cursor-pointer mt-auto"
+        >
+          Continue →
+        </button>
+      )}
+
       {/* Choice buttons */}
       {step.type === "choice" && step.choices.map(choice => (
         <button
