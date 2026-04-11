@@ -129,7 +129,7 @@ export async function resolveStep(gameState, playerInput) {
     }
 
     const narration = await getNarration({ step, playerInput, gameState: next, roll, success });
-    return { ...next, narration };
+    return { ...next, narration, lastRoll: { roll, success, dc: step.enemy.difficulty } };
   }
 
   // ── Loot ─────────────────────────────────────────────────────────────────

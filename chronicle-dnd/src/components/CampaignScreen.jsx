@@ -3,7 +3,7 @@ import { resolveStep } from "../game/campaignEngine";
 
 export default function CampaignScreen({ gameState, setGameState, onBack }) {
   const [loading, setLoading] = useState(false);
-  const [input, setInput] = useState("");
+  const [input, setInput]     = useState("");
 
   const step = gameState.campaign.steps[gameState.currentStep];
 
@@ -11,14 +11,17 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
     setGameState(prev => ({ ...prev, currentStep: nextStep }));
   }
 
-  async function handleAction() {
-    if (!input.trim() || loading) return;
+  async function handleAction(overrideInput) {
+    const text = (overrideInput ?? input).trim();
+    if (!text || loading) return;
     setLoading(true);
-    const next = await resolveStep(gameState, input.trim());
+    const next = await resolveStep(gameState, text);
     setGameState(next);
     setInput("");
     setLoading(false);
   }
+
+  const { lastRoll } = gameState;
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col px-5 py-6 gap-4">
@@ -32,6 +35,15 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         </div>
       </div>
 
+      {/* Roll badge — shown after a combat round */}
+      {lastRoll && step.type === "combat" && (
+        <div className="flex justify-center">
+          <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full border text-xs font-mono ${lastRoll.success ? "text-green-400 border-green-900 bg-green-950/40" : "text-red-400 border-red-900 bg-red-950/40"}`}>
+            🎲 d20: {lastRoll.roll} vs DC {lastRoll.dc} — {lastRoll.success ? "HIT" : "MISS"}
+          </div>
+        </div>
+      )}
+
       {/* Narrative text */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed font-serif">
         {(gameState.narration ?? step.text).split("\n\n").map((p, i) => (
@@ -39,7 +51,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         ))}
       </div>
 
-      {/* Player / enemy HP strip — shown during combat */}
+      {/* HP strip — combat only */}
       {step.type === "combat" && (
         <div className="flex gap-3 text-sm">
           <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2 flex justify-between">
@@ -68,19 +80,49 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         </button>
       ))}
 
-      {/* Free-text input — combat and exploration */}
-      {(step.type === "combat" || step.type === "exploration") && !gameState.gameOver && (
+      {/* Combat actions */}
+      {step.type === "combat" && !gameState.gameOver && (
+        <div className="flex flex-col gap-2 mt-auto">
+          <button
+            onClick={() => handleAction("I attack!")}
+            disabled={loading}
+            className="w-full py-3 bg-red-900 hover:bg-red-800 disabled:opacity-40 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm tracking-wide"
+          >
+            {loading ? "…" : "⚔️ ATTACK"}
+          </button>
+          <div className="flex gap-2">
+            <input
+              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 text-sm"
+              placeholder="Or describe your action…"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleAction()}
+              disabled={loading}
+            />
+            <button
+              onClick={() => handleAction()}
+              disabled={loading || !input.trim()}
+              className="px-4 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-bold rounded-xl transition-colors cursor-pointer"
+            >
+              ▶
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Exploration input */}
+      {step.type === "exploration" && !gameState.gameOver && (
         <div className="flex gap-2 mt-auto">
           <input
             className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500"
-            placeholder={step.type === "combat" ? "What do you do in combat?" : "What do you do?"}
+            placeholder="What do you do?"
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleAction()}
             disabled={loading}
           />
           <button
-            onClick={handleAction}
+            onClick={() => handleAction()}
             disabled={loading || !input.trim()}
             className="px-4 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-bold rounded-xl transition-colors cursor-pointer"
           >
