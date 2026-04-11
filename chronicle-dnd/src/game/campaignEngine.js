@@ -115,9 +115,9 @@ export async function resolveStep(gameState, playerInput) {
 
     if (enemy.hp <= 0) {
       next.player = { ...next.player, gold: next.player.gold + (step.enemy.xp ?? 0) };
-      next.currentStep = step.onVictory;
+      next = goToStep(next, step.onVictory);
     } else if (playerHp <= 0) {
-      next.currentStep = step.onDefeat;
+      next = goToStep(next, step.onDefeat);
     }
 
     const narration = await getNarration({ step, playerInput, gameState: next, roll, success });
