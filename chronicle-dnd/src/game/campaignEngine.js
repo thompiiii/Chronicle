@@ -44,8 +44,10 @@ export function goToStep(gameState, stepId) {
   const next = {
     ...gameState,
     currentStep: stepId,
-    log: [...gameState.log, stepId],
-    enemy: null,
+    log:      [...gameState.log, stepId],
+    enemy:    null,
+    narration: null,
+    lastRoll:  null,
   };
 
   if (step.type === "combat") {
