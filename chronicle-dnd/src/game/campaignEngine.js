@@ -182,6 +182,20 @@ export async function resolveExplorationStep(gameState, playerInput) {
   };
 }
 
+// ── End ────────────────────────────────────────────────────────────────────
+// Terminal step — no AI call, no further navigation. Uses step.text directly.
+
+export function resolveEndStep(gameState) {
+  const step = gameState.campaign.steps[gameState.currentStep];
+  if (step.type !== "end") throw new Error("resolveEndStep called on non-end step");
+
+  return {
+    ...gameState,
+    narration: step.text,
+    gameOver:  true,
+  };
+}
+
 // ── React integration ──────────────────────────────────────────────────────
 // Drop this into your component — moves to a scene choice without AI:
 //
