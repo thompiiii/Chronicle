@@ -31,13 +31,13 @@ export const goblinCaveCampaign = {
     // ── 1. Entrance ────────────────────────────────────────────────────────
     entrance: {
       id:    "entrance",
-      type:  "scene",
+      type:  "choice",
       title: "Cave Entrance",
       text:  "The cave mouth yawns between two mossy boulders, reeking of smoke and rotting meat. Crude torch-holders — sharpened sticks jammed into the earth — line the first ten feet. Somewhere inside, low voices bicker in Goblin.\n\nA narrow game trail circles around to the rear of the hill.",
       choices: [
-        { label: "Walk straight in through the front",  next: "patrol-front" },
-        { label: "Circle around to find a back entrance", next: "back-entrance" },
-        { label: "Wait and watch from the treeline",     next: "watch" },
+        { text: "Walk straight in through the front",  next: "patrol-front" },
+        { text: "Circle around to find a back entrance", next: "back-entrance" },
+        { text: "Wait and watch from the treeline",     next: "watch" },
       ],
     },
 
@@ -55,12 +55,12 @@ export const goblinCaveCampaign = {
     // ── 2b. Back entrance → easier path ───────────────────────────────────
     "back-entrance": {
       id:    "back-entrance",
-      type:  "scene",
+      type:  "choice",
       title: "The Crack in the Rock",
       text:  "A narrow split in the hillside leads into a storage alcove — crates of stolen goods, and one sleeping goblin slumped against the wall, snoring.\n\nBeyond the alcove, the cave opens up.",
       choices: [
-        { label: "Slip past the sleeping goblin", next: "inner-cave" },
-        { label: "Deal with it first",            next: "sleeper" },
+        { text: "Slip past the sleeping goblin", next: "inner-cave" },
+        { text: "Deal with it first",            next: "sleeper" },
       ],
     },
 
@@ -77,25 +77,25 @@ export const goblinCaveCampaign = {
     // ── 2c. Watch → spot weakness ─────────────────────────────────────────
     watch: {
       id:    "watch",
-      type:  "scene",
+      type:  "choice",
       title: "Patience",
       text:  "After ten minutes you count three goblins total — two near the entrance rotating shifts, one deeper inside. You also notice the patrol timing: there is a two-minute gap when only one is at the door.\n\nYou could exploit that window.",
       choices: [
-        { label: "Wait for the gap and move in",     next: "patrol-front" },
-        { label: "Circle to the back while distracted", next: "back-entrance" },
+        { text: "Wait for the gap and move in",     next: "patrol-front" },
+        { text: "Circle to the back while distracted", next: "back-entrance" },
       ],
     },
 
     // ── 3. Inner cave ──────────────────────────────────────────────────────
     "inner-cave": {
       id:    "inner-cave",
-      type:  "scene",
+      type:  "choice",
       title: "The Inner Cave",
       text:  "The cave widens into a rough chamber. A fire pit crackles in the centre — a stolen wagon wheel feeds the flames. Stolen goods are piled against the walls: sacks of grain, bolts of cloth, a locked iron strongbox.\n\nAt the far end, a goblin bigger than the rest sits on a throne of crates, gnawing a bone. A tarnished crown sits crooked on its head.\n\n\"WHO YOU?\" it roars.",
       choices: [
-        { label: "\"I'm here for the strongbox. Stand aside.\"", next: "chieftain" },
-        { label: "Attack without talking",                       next: "chieftain" },
-        { label: "Search for another way around",                next: "side-passage" },
+        { text: "\"I'm here for the strongbox. Stand aside.\"", next: "chieftain" },
+        { text: "Attack without talking",                       next: "chieftain" },
+        { text: "Search for another way around",                next: "side-passage" },
       ],
     },
 

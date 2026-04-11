@@ -60,7 +60,7 @@ export function goToStep(gameState, stepId) {
 
 export function chooseOption(gameState, choiceIndex) {
   const step = gameState.campaign.steps[gameState.currentStep];
-  if (step.type !== "scene") throw new Error("chooseOption only valid on scene steps");
+  if (step.type !== "choice") throw new Error("chooseOption only valid on choice steps");
   const choice = step.choices[choiceIndex];
   if (!choice) throw new Error(`No choice at index ${choiceIndex}`);
   return goToStep(gameState, choice.next);
