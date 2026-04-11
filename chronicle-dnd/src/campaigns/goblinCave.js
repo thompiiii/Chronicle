@@ -69,6 +69,7 @@ export const goblinCaveCampaign = {
     },
 
     // ── 2b. Back entrance → easier path ───────────────────────────────────
+    "back-entrance": {
       id:    "back-entrance",
       type:  "choice",
       title: "The Crack in the Rock",

@@ -21,7 +21,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
     setLoading(false);
   }
 
-  const { lastRoll } = gameState;
+  const { lastRoll, combatLog } = gameState;
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col px-5 py-6 gap-4">
@@ -38,21 +38,23 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
       {/* Roll badges — shown after a combat round */}
       {lastRoll && step.type === "combat" && (
         <div className="flex gap-2">
-          <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${lastRoll.playerHit ? "text-green-400 border-green-900 bg-green-950/40" : "text-zinc-400 border-zinc-800 bg-zinc-950/40"}`}>
-            ⚔️ {lastRoll.playerRoll} vs {lastRoll.playerDc} — {lastRoll.playerHit ? "HIT" : "MISS"}
+          <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${
+            lastRoll.isCrit   ? "text-yellow-300 border-yellow-700 bg-yellow-950/40" :
+            lastRoll.isFumble ? "text-red-400 border-red-900 bg-red-950/40" :
+            lastRoll.playerHit ? "text-green-400 border-green-900 bg-green-950/40" :
+                                 "text-zinc-400 border-zinc-800 bg-zinc-950/40"
+          }`}>
+            {lastRoll.isCrit ? "⚡" : lastRoll.isFumble ? "💀" : "⚔️"} {lastRoll.playerRoll} vs {lastRoll.playerDc} — {lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE" : lastRoll.playerHit ? "HIT" : "MISS"}
           </div>
-          <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${lastRoll.enemyHit ? "text-red-400 border-red-900 bg-red-950/40" : "text-zinc-400 border-zinc-800 bg-zinc-950/40"}`}>
-            👺 {lastRoll.enemyRoll} vs {lastRoll.enemyDc} — {lastRoll.enemyHit ? "HIT" : "MISS"}
+          <div className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-mono ${
+            lastRoll.enemyResult === "miss"  ? "text-zinc-400 border-zinc-800 bg-zinc-950/40" :
+            lastRoll.enemyResult === "heavy" ? "text-orange-400 border-orange-900 bg-orange-950/40" :
+                                               "text-red-400 border-red-900 bg-red-950/40"
+          }`}>
+            👺 {lastRoll.enemyRoll} — {lastRoll.enemyResult === "miss" ? "MISS" : lastRoll.enemyResult === "heavy" ? "HEAVY HIT" : "HIT"}
           </div>
         </div>
       )}
-
-      {/* Narrative text */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed font-serif">
-        {(gameState.narration ?? step.text).split("\n\n").map((p, i) => (
-          <p key={i} className="mb-2 last:mb-0">{p}</p>
-        ))}
-      </div>
 
       {/* HP strip — combat only */}
       {step.type === "combat" && (
@@ -72,6 +74,22 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         </div>
       )}
 
+      {/* Narrative text */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed font-serif">
+        {(gameState.narration ?? step.text).split("\n\n").map((p, i) => (
+          <p key={i} className="mb-2 last:mb-0">{p}</p>
+        ))}
+      </div>
+
+      {/* Combat log — most recent turn */}
+      {combatLog && combatLog.length > 0 && step.type === "combat" && (
+        <div className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 flex flex-col gap-1">
+          {combatLog.map((line, i) => (
+            <p key={i} className="text-xs font-mono text-zinc-400">{line}</p>
+          ))}
+        </div>
+      )}
+
       {/* Choice buttons */}
       {step.type === "choice" && step.choices.map(choice => (
         <button
@@ -86,30 +104,35 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
       {/* Combat actions */}
       {step.type === "combat" && !gameState.gameOver && (
         <div className="flex flex-col gap-2 mt-auto">
-          <button
-            onClick={() => handleAction("I attack!")}
-            disabled={loading}
-            className="w-full py-3 bg-red-900 hover:bg-red-800 disabled:opacity-40 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm tracking-wide"
-          >
-            {loading ? "…" : "⚔️ ATTACK"}
-          </button>
-          <div className="flex gap-2">
-            <input
-              className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 text-sm"
-              placeholder="Or describe your action…"
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && handleAction()}
-              disabled={loading}
-            />
+          <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => handleAction()}
-              disabled={loading || !input.trim()}
-              className="px-4 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-bold rounded-xl transition-colors cursor-pointer"
+              onClick={() => handleAction("I attack!")}
+              disabled={loading}
+              className="py-3 bg-red-900 hover:bg-red-800 disabled:opacity-40 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm tracking-wide flex flex-col items-center gap-0.5"
             >
-              ▶
+              <span>⚔️</span>
+              <span className="text-xs">Attack</span>
+            </button>
+            <button
+              onClick={() => handleAction("I defend!")}
+              disabled={loading}
+              className="py-3 bg-blue-900 hover:bg-blue-800 disabled:opacity-40 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm tracking-wide flex flex-col items-center gap-0.5"
+            >
+              <span>🛡️</span>
+              <span className="text-xs">Defend</span>
+            </button>
+            <button
+              onClick={() => handleAction("heavy attack!")}
+              disabled={loading}
+              className="py-3 bg-orange-900 hover:bg-orange-800 disabled:opacity-40 text-white font-bold rounded-xl transition-colors cursor-pointer text-sm tracking-wide flex flex-col items-center gap-0.5"
+            >
+              <span>💥</span>
+              <span className="text-xs">Heavy</span>
             </button>
           </div>
+          {loading && (
+            <p className="text-center text-zinc-500 text-xs animate-pulse">Resolving…</p>
+          )}
         </div>
       )}
 

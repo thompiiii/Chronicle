@@ -64,7 +64,9 @@ export async function getNarration(arg1, arg2, callbacks = {}) {
     const { step, playerInput, gameState, roll, success } = arg1;
     const { onChunk, onError } = arg2 ?? {};
 
+    const { isCrit } = arg1;
     const enemyHp = gameState.enemy?.hp ?? 0;
+    const isCombat = roll !== undefined;
     const text = [
       `Current scenario: ${step.title}`,
       `Description: ${step.text}`,
@@ -73,13 +75,14 @@ export async function getNarration(arg1, arg2, callbacks = {}) {
       ``,
       `Game facts:`,
       `- Player HP: ${gameState.player?.hp}`,
-      roll !== undefined ? `- Enemy HP: ${enemyHp}`         : null,
-      roll !== undefined ? `- Roll: ${roll}`                 : null,
-      roll !== undefined ? `- Result: ${success ? "success" : "failure"}` : null,
+      isCombat ? `- Enemy HP: ${enemyHp}`                            : null,
+      isCombat ? `- Roll: ${roll}`                                    : null,
+      isCombat ? `- Result: ${success ? "success" : "failure"}${isCrit ? " (CRITICAL HIT)" : ""}` : null,
       ``,
       `Rules:`,
       `- Do NOT change outcomes`,
       `- Only narrate what already happened`,
+      isCombat ? `- 1-2 sentences MAX. Focus on impact only. Do NOT describe dice, numbers, or mechanics.` : null,
     ].filter(line => line !== null).join("\n");
 
     return streamNarration({ text, gameState: gameState ?? {}, onChunk, onError });

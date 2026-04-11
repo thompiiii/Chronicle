@@ -14,6 +14,28 @@
 import { rollDie } from "./gameEngine";
 import { getNarration } from "./aiClient";
 
+// ── Combat helpers ─────────────────────────────────────────────────────────
+
+function detectCombatAction(playerInput) {
+  const t = playerInput.toLowerCase();
+  if (t === "defend" || t.includes("defend") || t.includes("block")) return "defend";
+  if (t === "heavy"  || t.includes("heavy")  || t.includes("power")) return "heavy";
+  return "attack";
+}
+
+// Damage with ±2 variance, minimum 1
+function rollDamage(base) {
+  return Math.max(1, base - 2 + rollDie(5) - 1);
+}
+
+// Enemy behaviour: roll d20 → miss / normal / heavy
+function resolveEnemyTurn(enemy) {
+  const roll = rollDie(20);
+  if (roll < 6)  return { roll, damage: 0,                        result: "miss"   };
+  if (roll > 15) return { roll, damage: Math.ceil(enemy.attack * 1.5), result: "heavy" };
+                 return { roll, damage: enemy.attack,              result: "hit"    };
+}
+
 // ── Factory ────────────────────────────────────────────────────────────────
 
 export function createCampaignState(campaign, playerOverrides = {}) {
@@ -102,29 +124,65 @@ export async function resolveStep(gameState, playerInput) {
 
   // ── Combat ───────────────────────────────────────────────────────────────
   if (step.type === "combat") {
-    const enemy = gameState.enemy
+    const enemy     = gameState.enemy
       ? { ...gameState.enemy }
       : { ...step.enemy, maxHp: step.enemy.hp };
+    const action    = detectCombatAction(playerInput);
+    const combatLog = [];
 
     // ── Player turn ──────────────────────────────────────────────────────
     const playerRoll = rollDie(20);
-    const playerHit  = playerRoll >= step.enemy.difficulty;
+    const isCrit     = playerRoll === 20;
+    const isFumble   = playerRoll === 1;
+    const dc         = step.enemy.difficulty + (action === "heavy" ? 3 : 0);
+    const playerHit  = !isFumble && (isCrit || playerRoll >= dc);
+
+    let playerDamage = 0;
     if (playerHit) {
-      enemy.hp = Math.max(0, enemy.hp - gameState.player.attack);
+      playerDamage = action === "heavy"
+        ? gameState.player.attack * 2
+        : rollDamage(gameState.player.attack);
+      if (isCrit) playerDamage *= 2;
     }
+    const fumbleDamage = isFumble ? rollDie(2) : 0;
+    enemy.hp = Math.max(0, enemy.hp - playerDamage);
+
+    combatLog.push(
+      isCrit   ? `⚡ CRITICAL! You ${action} (${playerRoll} vs ${dc}) → HIT` :
+      isFumble ? `💀 FUMBLE! You ${action} (${playerRoll} vs ${dc}) → MISS` :
+                 `You ${action} (${playerRoll} vs ${dc}) → ${playerHit ? "HIT" : "MISS"}`
+    );
+    if (playerHit)    combatLog.push(`You deal ${playerDamage} damage${isCrit ? " (CRIT!)" : ""}`);
+    if (fumbleDamage) combatLog.push(`You hurt yourself for ${fumbleDamage} damage`);
 
     // ── Enemy turn ───────────────────────────────────────────────────────
-    const playerDefense = gameState.player.defense ?? 10;
-    const enemyRoll     = rollDie(20);
-    const enemyHit      = enemy.hp > 0 && enemyRoll >= playerDefense;
-    const playerHp      = Math.max(0, gameState.player.hp - (enemyHit ? enemy.attack : 0));
+    let playerHp  = gameState.player.hp - fumbleDamage;
+    let enemyTurn = { roll: 0, damage: 0, result: "miss" };
 
+    if (enemy.hp > 0) {
+      enemyTurn = resolveEnemyTurn(enemy);
+      let incoming = enemyTurn.damage;
+      if (action === "defend") incoming = Math.ceil(incoming * 0.5);
+      playerHp = Math.max(0, playerHp - incoming);
+
+      if (action === "defend" && enemyTurn.result !== "miss") combatLog.push(`🛡️ You brace — damage halved`);
+      if (enemyTurn.result === "miss") {
+        combatLog.push(`${step.enemy.name} attacks (${enemyTurn.roll}) → MISS`);
+      } else {
+        combatLog.push(`${step.enemy.name} attacks (${enemyTurn.roll}) → ${enemyTurn.result === "heavy" ? "HEAVY HIT" : "HIT"}`);
+        combatLog.push(`You take ${incoming} damage`);
+      }
+    }
+
+    // ── Resolve ──────────────────────────────────────────────────────────
     let next = {
       ...gameState,
-      player: { ...gameState.player, hp: playerHp },
-      enemy:  enemy.hp > 0 ? enemy : null,
+      player:    { ...gameState.player, hp: Math.max(0, playerHp) },
+      enemy:     enemy.hp > 0 ? enemy : null,
+      combatLog,
     };
 
+    const combatOver = enemy.hp <= 0 || playerHp <= 0;
     if (enemy.hp <= 0) {
       next.player = { ...next.player, gold: next.player.gold + (step.enemy.xp ?? 0) };
       next = goToStep(next, step.onVictory);
@@ -133,12 +191,11 @@ export async function resolveStep(gameState, playerInput) {
     }
 
     const lastRoll = {
-      playerRoll, playerHit, playerDc: step.enemy.difficulty,
-      enemyRoll,  enemyHit,  enemyDc:  playerDefense,
+      playerRoll, playerHit, playerDc: dc, isCrit, isFumble, action,
+      enemyRoll: enemyTurn.roll, enemyResult: enemyTurn.result,
     };
 
-    const combatOver = enemy.hp <= 0 || playerHp <= 0;
-    const narration  = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit });
+    const narration = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit, isCrit });
     return { ...next, narration: combatOver ? null : narration, lastRoll };
   }
 
