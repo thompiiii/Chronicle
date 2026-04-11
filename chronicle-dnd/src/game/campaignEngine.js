@@ -48,7 +48,7 @@ export function goToStep(gameState, stepId) {
   };
 
   if (step.type === "combat") {
-    next.enemy = { ...step.enemy, maxHp: step.enemy.hp, hp: step.enemy.hp };
+    next.enemy = { ...step.enemy, maxHp: step.enemy.hp };
   }
 
   if (step.type === "loot") {
