@@ -65,15 +65,18 @@ export function goToStep(gameState, stepId) {
 
   const next = {
     ...gameState,
-    currentStep: stepId,
-    log:      [...gameState.log, stepId],
-    enemy:    null,
-    narration: null,
-    lastRoll:  null,
+    currentStep:       stepId,
+    log:               [...gameState.log, stepId],
+    enemy:             null,
+    narration:         null,
+    lastRoll:          null,
+    pendingTransition: null,
   };
 
   if (step.type === "combat") {
-    next.enemy = { ...step.enemy, maxHp: step.enemy.hp };
+    next.enemy       = { ...step.enemy, maxHp: step.enemy.hp };
+    next.battleStats = { dealt: 0, taken: 0, rounds: 0, crits: 0, fumbles: 0 };
+    next.battleLog   = [];
   }
 
   if (step.type === "loot") {
@@ -167,14 +170,16 @@ export async function resolveStep(gameState, playerInput) {
     }
 
     // ── Enemy turn ───────────────────────────────────────────────────────
-    let playerHp  = gameState.player.hp - fumbleDamage;
-    let enemyTurn = { roll: 0, damage: 0, result: "miss" };
+    let playerHp     = gameState.player.hp - fumbleDamage;
+    let enemyTurn    = { roll: 0, damage: 0, result: "miss" };
+    let actualTaken  = fumbleDamage;
 
     if (enemy.hp > 0) {
       enemyTurn = resolveEnemyTurn(enemy);
       let incoming = enemyTurn.damage;
       if (action === "defend") incoming = Math.ceil(incoming * 0.5);
-      playerHp = Math.max(0, playerHp - incoming);
+      playerHp    = Math.max(0, playerHp - incoming);
+      actualTaken += incoming;
 
       if (action === "defend" && enemyTurn.result !== "miss") combatLog.push(`🛡️ You brace — damage halved`);
       if (enemyTurn.result === "miss") {
@@ -185,29 +190,51 @@ export async function resolveStep(gameState, playerInput) {
       }
     }
 
+    // ── Accumulate battle stats ───────────────────────────────────────────
+    const prev = gameState.battleStats ?? { dealt: 0, taken: 0, rounds: 0, crits: 0, fumbles: 0 };
+    const battleStats = {
+      dealt:   prev.dealt   + playerDamage,
+      taken:   prev.taken   + actualTaken,
+      rounds:  prev.rounds  + 1,
+      crits:   prev.crits   + (isCrit   ? 1 : 0),
+      fumbles: prev.fumbles + (isFumble ? 1 : 0),
+    };
+    const battleLog = [...(gameState.battleLog ?? []), ...combatLog];
+
     // ── Resolve ──────────────────────────────────────────────────────────
     let next = {
       ...gameState,
-      player:    { ...gameState.player, hp: Math.max(0, playerHp) },
-      enemy:     enemy.hp > 0 ? enemy : null,
+      player:     { ...gameState.player, hp: Math.max(0, playerHp) },
+      enemy:      enemy.hp > 0 ? enemy : null,
       combatLog,
+      battleStats,
+      battleLog,
     };
-
-    const combatOver = enemy.hp <= 0 || playerHp <= 0;
-    if (enemy.hp <= 0) {
-      next.player = { ...next.player, gold: next.player.gold + (step.enemy.xp ?? 0) };
-      next = goToStep(next, step.onVictory);
-    } else if (playerHp <= 0) {
-      next = goToStep(next, step.onDefeat);
-    }
 
     const lastRoll = {
       playerRoll, playerHit, isCrit, isFumble, action,
       enemyRoll: enemyTurn.roll, enemyResult: enemyTurn.result,
     };
 
+    const combatOver = enemy.hp <= 0 || playerHp <= 0;
+
+    if (combatOver) {
+      const outcome  = enemy.hp <= 0 ? "victory" : "defeat";
+      const nextStep = outcome === "victory" ? step.onVictory : step.onDefeat;
+      if (outcome === "victory") {
+        next.player = { ...next.player, gold: next.player.gold + (step.enemy.xp ?? 0) };
+      }
+      const narration = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit, isCrit });
+      return {
+        ...next,
+        lastRoll,
+        narration: null,
+        pendingTransition: { nextStep, outcome, battleStats, battleLog, narration },
+      };
+    }
+
     const narration = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit, isCrit });
-    return { ...next, narration: combatOver ? null : narration, lastRoll };
+    return { ...next, narration, lastRoll };
   }
 
   // ── Loot ─────────────────────────────────────────────────────────────────

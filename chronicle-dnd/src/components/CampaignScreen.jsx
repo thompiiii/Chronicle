@@ -151,6 +151,81 @@ function NarrationBox({ text }) {
   );
 }
 
+function BattleRecap({ transition, onContinue }) {
+  const { outcome, battleStats, battleLog, narration } = transition;
+  const isVictory = outcome === "victory";
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Outcome banner */}
+      <div className={`rounded-2xl px-5 py-4 text-center border ${
+        isVictory
+          ? "bg-green-950/40 border-green-800"
+          : "bg-red-950/40 border-red-900"
+      }`}>
+        <p className="text-2xl mb-1">{isVictory ? "⚔️" : "💀"}</p>
+        <p className={`text-lg font-black tracking-widest uppercase ${isVictory ? "text-green-300" : "text-red-400"}`}>
+          {isVictory ? "Victory" : "Defeated"}
+        </p>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-2">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col items-center py-3 gap-0.5">
+          <span className="text-xl font-black text-red-400">{battleStats.dealt}</span>
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Dealt</span>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col items-center py-3 gap-0.5">
+          <span className="text-xl font-black text-amber-400">{battleStats.taken}</span>
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Taken</span>
+        </div>
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col items-center py-3 gap-0.5">
+          <span className="text-xl font-black text-zinc-300">{battleStats.rounds}</span>
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Rounds</span>
+        </div>
+      </div>
+
+      {/* Crit / fumble badges */}
+      {(battleStats.crits > 0 || battleStats.fumbles > 0) && (
+        <div className="flex gap-2">
+          {battleStats.crits > 0 && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-yellow-950 border border-yellow-800 text-yellow-300 font-mono">
+              ⚡ {battleStats.crits} crit{battleStats.crits > 1 ? "s" : ""}
+            </span>
+          )}
+          {battleStats.fumbles > 0 && (
+            <span className="text-xs px-3 py-1.5 rounded-full bg-red-950 border border-red-900 text-red-400 font-mono">
+              💀 {battleStats.fumbles} fumble{battleStats.fumbles > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Full battle log */}
+      <div className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 flex flex-col gap-1 max-h-40 overflow-y-auto">
+        <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-1">Battle Log</p>
+        {battleLog.map((line, i) => (
+          <p key={i} className="text-xs font-mono text-zinc-400">{line}</p>
+        ))}
+      </div>
+
+      {/* Narration */}
+      {narration && (
+        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3">
+          <p className="text-zinc-300 text-sm leading-relaxed font-serif">{narration}</p>
+        </div>
+      )}
+
+      <button
+        onClick={onContinue}
+        className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition-colors cursor-pointer"
+      >
+        Continue →
+      </button>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function CampaignScreen({ gameState, setGameState, onBack }) {
@@ -193,8 +268,16 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         </div>
       </div>
 
+      {/* ── BATTLE RECAP (combat just ended) ──────────────────────────────── */}
+      {gameState.pendingTransition && (
+        <BattleRecap
+          transition={gameState.pendingTransition}
+          onContinue={() => setGameState(prev => goToStep(prev, prev.pendingTransition.nextStep))}
+        />
+      )}
+
       {/* ── COMBAT LAYOUT ─────────────────────────────────────────────────── */}
-      {isCombat && !gameState.gameOver && (
+      {isCombat && !gameState.pendingTransition && !gameState.gameOver && (
         <>
           <EnemyPanel enemy={gameState.enemy} step={step} />
           <DiceDisplay lastRoll={lastRoll} />
