@@ -154,7 +154,7 @@ export const goblinCaveCampaign = {
       id:    "defeat",
       type:  "end",
       title: "Defeated",
-      text:  "The goblins drag you to the entrance and dump you in the mud. You wake at dawn, stripped of your gold, alive only because you weren't worth eating.\n\nThe cave remains in goblin hands.",
+      text:  "You have been defeated.",
       outcome: "defeat",
     },
 
