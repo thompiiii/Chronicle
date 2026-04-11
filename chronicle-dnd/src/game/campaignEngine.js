@@ -107,7 +107,7 @@ export async function resolveStep(gameState, playerInput) {
     const success = roll >= step.enemy.difficulty;
 
     if (success) {
-      enemy.hp -= gameState.player.attack;
+      enemy.hp = Math.max(0, enemy.hp - gameState.player.attack);
     }
 
     let playerHp = gameState.player.hp;
