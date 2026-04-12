@@ -41,12 +41,13 @@ function resolveEnemyTurn(enemy) {
 export function createCampaignState(campaign, playerOverrides = {}) {
   return {
     player: {
-      hp:        20,
-      maxHp:     20,
-      attack:    5,
-      defense:   10,
-      inventory: [],
-      gold:      0,
+      hp:             20,
+      maxHp:          20,
+      attack:         5,
+      defense:        10,
+      inventory:      [],
+      gold:           0,
+      equippedWeapon: null,
       ...campaign.playerOverrides,
       ...playerOverrides,
     },
@@ -264,6 +265,50 @@ function applyLoot(player, loot) {
   const gold      = (player.gold      ?? 0) + (loot.gold  ?? 0);
   const inventory = [...(player.inventory ?? []), ...(loot.items ?? [])];
   return { ...player, gold, inventory };
+}
+
+// ── Item Usage ─────────────────────────────────────────────────────────────
+
+export function useItem(gameState, itemName) {
+  const inventory = gameState.player.inventory;
+  const idx = inventory.findIndex(i => i.name === itemName);
+  if (idx === -1) return gameState;
+
+  const item = inventory[idx];
+  if (!item.effect) return gameState;
+
+  if (item.effect.type === "heal") {
+    let heal = 0;
+    if (item.effect.flat !== undefined) {
+      heal = item.effect.flat;
+    } else {
+      for (let d = 0; d < item.effect.numDice; d++) heal += rollDie(item.effect.sides);
+      heal += (item.effect.bonus ?? 0);
+    }
+    const newInventory = [...inventory];
+    newInventory.splice(idx, 1);
+    return {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        hp:        Math.min(gameState.player.maxHp, gameState.player.hp + heal),
+        inventory: newInventory,
+      },
+    };
+  }
+
+  if (item.effect.type === "weapon") {
+    return {
+      ...gameState,
+      player: {
+        ...gameState.player,
+        attack:         item.effect.attack,
+        equippedWeapon: item.name,
+      },
+    };
+  }
+
+  return gameState;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

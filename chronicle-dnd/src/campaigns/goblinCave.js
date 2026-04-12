@@ -61,8 +61,8 @@ export const goblinCaveCampaign = {
       loot: {
         gold:  8,
         items: [
-          { name: "Shortsword",    type: "Weapon",     desc: "1d6 piercing · looted from the patrol" },
-          { name: "Storeroom Key", type: "Misc",       desc: "A tarnished iron key — opens something deeper in the cave" },
+          { name: "Shortsword",    type: "Weapon",     desc: "1d6 piercing · looted from the patrol",           effect: { type: "weapon", attack: 6 } },
+          { name: "Storeroom Key", type: "Misc",       desc: "A tarnished iron key — opens something deeper in the cave", effect: null },
         ],
       },
       next: "inner-cave",
@@ -124,8 +124,8 @@ export const goblinCaveCampaign = {
       loot: {
         gold:  20,
         items: [
-          { name: "Health Potion",   type: "Consumable", desc: "Restores 2d4+2 HP" },
-          { name: "Treasure Map",    type: "Misc",       desc: "Marks a location in the cave's lower level" },
+          { name: "Health Potion",   type: "Consumable", desc: "Restores 2d4+2 HP",                            effect: { type: "heal", numDice: 2, sides: 4, bonus: 2 } },
+          { name: "Treasure Map",    type: "Misc",       desc: "Marks a location in the cave's lower level",   effect: null },
         ],
       },
       next: "chieftain",
@@ -139,7 +139,7 @@ export const goblinCaveCampaign = {
       loot: {
         gold:  15,
         items: [
-          { name: "Healing Salve", type: "Consumable", desc: "Restore 4 HP when used" },
+          { name: "Healing Salve", type: "Consumable", desc: "Restore 4 HP when used", effect: { type: "heal", flat: 4 } },
         ],
       },
       next: "chieftain",
@@ -165,9 +165,9 @@ export const goblinCaveCampaign = {
       loot: {
         gold:  40,
         items: [
-          { name: "Grix's Scimitar",    type: "Weapon",     desc: "1d6 slashing · looted from the chieftain" },
-          { name: "Letter of Credit",   type: "Misc",       desc: "Worth 20 gp at any trading post" },
-          { name: "Health Potion",      type: "Consumable", desc: "Restores 2d4+2 HP" },
+          { name: "Grix's Scimitar",    type: "Weapon",     desc: "1d6 slashing · looted from the chieftain",  effect: { type: "weapon", attack: 7 } },
+          { name: "Letter of Credit",   type: "Misc",       desc: "Worth 20 gp at any trading post",           effect: null },
+          { name: "Health Potion",      type: "Consumable", desc: "Restores 2d4+2 HP",                         effect: { type: "heal", numDice: 2, sides: 4, bonus: 2 } },
         ],
       },
       next: "victory",
