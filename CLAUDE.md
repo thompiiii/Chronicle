@@ -47,4 +47,8 @@ CHANGELOG.md                  — user-facing changelog
 - `useItem` is a pure function — no async, no side effects beyond returning new state
 
 ## After Every Change
-Update `DEVLOG.md` — change history section + any state/architecture changes.
+**Always do this before committing — no exceptions:**
+1. Update `DEVLOG.md` — add an entry under Change History with the date, what changed, and why. Update any affected state shapes, component tables, or architecture sections.
+2. Include `DEVLOG.md` in the same commit as the code changes (not a separate follow-up commit).
+
+If multiple files changed, one DEVLOG entry covering all of them is fine.
