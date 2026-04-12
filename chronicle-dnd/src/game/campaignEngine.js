@@ -44,6 +44,7 @@ export function createCampaignState(campaign, playerOverrides = {}) {
       hp:             20,
       maxHp:          20,
       attack:         5,
+      baseAttack:     5,
       defense:        10,
       inventory:      [],
       gold:           0,
@@ -302,11 +303,23 @@ export function useItem(gameState, itemName) {
         ...gameState.player,
         attack:         item.effect.attack,
         equippedWeapon: item.name,
+        // baseAttack unchanged — used to restore on unequip
       },
     };
   }
 
   return gameState;
+}
+
+export function unequipWeapon(gameState) {
+  return {
+    ...gameState,
+    player: {
+      ...gameState.player,
+      attack:         gameState.player.baseAttack,
+      equippedWeapon: null,
+    },
+  };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

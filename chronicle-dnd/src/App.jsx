@@ -557,6 +557,7 @@ export default function App() {
   const [character, setCharacter] = useState(null);
   const [activeTab, setActiveTab] = useState(null);
   const [inventory, setInventory] = useState([]);
+  const [equippedWeaponId, setEquippedWeaponId] = useState(null);
   const [gold, setGold] = useState(10);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [campaignId, setCampaignId] = useState(null);
@@ -699,7 +700,8 @@ export default function App() {
         // ── Game Engine Path ──────────────────────────────────────────────
         // Step 1: resolve action in code — dice roll + outcome determined here,
         //         BEFORE the AI is ever called.
-        const turnResult = processTurn(msg, { character });
+        const equippedWeapon = inventory.find(i => i.id === equippedWeaponId) ?? null;
+        const turnResult = processTurn(msg, { character, equippedWeapon });
 
         // Step 2: show the roll badge only if this action required a roll
         if (turnResult.needsRoll) {
@@ -1260,29 +1262,41 @@ export default function App() {
             </div>
             {inventory.length === 0 && <p className="text-zinc-600 text-sm text-center py-2">Your pack is empty.</p>}
             <div className="space-y-1">
-              {inventory.map(item => (
-                <div key={item.id} className="flex items-center gap-2 bg-black rounded-xl p-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-white text-sm font-medium truncate">{item.name}</span>
-                      <span className={`text-xs ${TYPE_COLORS[item.type] || "text-zinc-400"}`}>{item.type}</span>
+              {inventory.map(item => {
+                const isEquipped = item.id === equippedWeaponId;
+                return (
+                  <div key={item.id} className={`flex items-center gap-2 rounded-xl p-2 ${isEquipped ? "bg-red-950/30 border border-red-900/50" : "bg-black"}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-white text-sm font-medium truncate">{item.name}</span>
+                        <span className={`text-xs ${TYPE_COLORS[item.type] || "text-zinc-400"}`}>{item.type}</span>
+                        {isEquipped && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-950 border border-amber-800 text-amber-400">Equipped</span>}
+                      </div>
+                      <p className="text-zinc-600 text-xs truncate">{item.desc} · {item.weight} lb</p>
                     </div>
-                    <p className="text-zinc-600 text-xs truncate">{item.desc} · {item.weight} lb</p>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {item.type === "Weapon" && (
+                        <button
+                          onClick={() => setEquippedWeaponId(isEquipped ? null : item.id)}
+                          className={`text-[10px] px-2 py-1 rounded-lg font-semibold cursor-pointer transition-colors ${isEquipped ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300" : "bg-red-900/60 hover:bg-red-800 text-red-300"}`}
+                        >
+                          {isEquipped ? "Unequip" : "Equip"}
+                        </button>
+                      )}
+                      {item.qty > 1 || item.type === "Consumable" ? (
+                        <>
+                          <button onClick={() => changeQty(item.id, -1)} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs text-white cursor-pointer flex items-center justify-center">−</button>
+                          <span className="text-white text-xs w-4 text-center">{item.qty}</span>
+                          <button onClick={() => changeQty(item.id, 1)} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs text-white cursor-pointer flex items-center justify-center">+</button>
+                        </>
+                      ) : (
+                        <span className="text-zinc-700 text-xs w-6 text-center">×1</span>
+                      )}
+                      <button onClick={() => { if (isEquipped) setEquippedWeaponId(null); removeItem(item.id); }} className="w-5 h-5 bg-red-900/50 hover:bg-red-800 rounded text-xs text-red-400 cursor-pointer flex items-center justify-center ml-1">✕</button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    {item.qty > 1 || item.type === "Consumable" ? (
-                      <>
-                        <button onClick={() => changeQty(item.id, -1)} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs text-white cursor-pointer flex items-center justify-center">−</button>
-                        <span className="text-white text-xs w-4 text-center">{item.qty}</span>
-                        <button onClick={() => changeQty(item.id, 1)} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs text-white cursor-pointer flex items-center justify-center">+</button>
-                      </>
-                    ) : (
-                      <span className="text-zinc-700 text-xs w-14 text-center">×1</span>
-                    )}
-                    <button onClick={() => removeItem(item.id)} className="w-5 h-5 bg-red-900/50 hover:bg-red-800 rounded text-xs text-red-400 cursor-pointer flex items-center justify-center ml-1">✕</button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-2 pt-2 border-t border-zinc-800 flex justify-between text-xs text-zinc-600">
               <span>{inventory.length} items</span>

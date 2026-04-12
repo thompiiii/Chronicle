@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { resolveStep, createCampaignState, goToStep, useItem } from "../game/campaignEngine";
+import { resolveStep, createCampaignState, goToStep, useItem, unequipWeapon } from "../game/campaignEngine";
 
 // ── Item type styles ──────────────────────────────────────────────────────────
 
@@ -144,7 +144,7 @@ function NarrationBox({ text }) {
   );
 }
 
-function InventoryItemRow({ item, player, isCombat, onUseItem }) {
+function InventoryItemRow({ item, player, isCombat, onUseItem, onUnequip }) {
   const styles  = ITEM_TYPE_STYLES[item.type] ?? ITEM_TYPE_STYLES.Misc;
   const isEquipped = player.equippedWeapon === item.name;
 
@@ -175,25 +175,36 @@ function InventoryItemRow({ item, player, isCombat, onUseItem }) {
           Use
         </button>
       )}
-      {item.type === "Weapon" && item.effect && !isEquipped && (
-        isCombat ? (
-          <span className="flex-shrink-0 text-[10px] text-zinc-600 italic self-center whitespace-nowrap">
-            out of combat
-          </span>
+      {item.type === "Weapon" && item.effect && (
+        isEquipped ? (
+          isCombat ? (
+            <span className="flex-shrink-0 text-[10px] text-zinc-600 italic self-center whitespace-nowrap">out of combat</span>
+          ) : (
+            <button
+              onClick={onUnequip}
+              className="flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-semibold transition-colors cursor-pointer"
+            >
+              Unequip
+            </button>
+          )
         ) : (
-          <button
-            onClick={() => onUseItem(item.name)}
-            className="flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-red-900 hover:bg-red-800 border border-red-700 text-red-300 font-semibold transition-colors cursor-pointer"
-          >
-            Equip
-          </button>
+          isCombat ? (
+            <span className="flex-shrink-0 text-[10px] text-zinc-600 italic self-center whitespace-nowrap">out of combat</span>
+          ) : (
+            <button
+              onClick={() => onUseItem(item.name)}
+              className="flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-red-900 hover:bg-red-800 border border-red-700 text-red-300 font-semibold transition-colors cursor-pointer"
+            >
+              Equip
+            </button>
+          )
         )
       )}
     </div>
   );
 }
 
-function InventoryPanel({ player, onUseItem, isCombat }) {
+function InventoryPanel({ player, onUseItem, isCombat, onUnequip }) {
   const [isOpen, setIsOpen] = useState(false);
   const items      = player.inventory ?? [];
   const weapons    = items.filter(i => i.type === "Weapon");
@@ -242,6 +253,7 @@ function InventoryPanel({ player, onUseItem, isCombat }) {
                     player={player}
                     isCombat={isCombat}
                     onUseItem={onUseItem}
+                    onUnequip={onUnequip}
                   />
                 ))}
               </div>
@@ -355,6 +367,10 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
     setGameState(prev => useItem(prev, itemName));
   }
 
+  function handleUnequip() {
+    setGameState(prev => unequipWeapon(prev));
+  }
+
   const { lastRoll, combatLog } = gameState;
   const isCombat = step.type === "combat";
 
@@ -399,7 +415,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
             <p className="text-center text-zinc-600 text-xs animate-pulse">Resolving turn…</p>
           )}
 
-          <InventoryPanel player={gameState.player} onUseItem={handleUseItem} isCombat={true} />
+          <InventoryPanel player={gameState.player} onUseItem={handleUseItem} isCombat={true} onUnequip={handleUnequip} />
 
           <NarrationBox text={gameState.narration} />
         </>
@@ -491,7 +507,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
 
           {/* Inventory (all non-combat, non-end screens) */}
           {!gameState.gameOver && (
-            <InventoryPanel player={gameState.player} onUseItem={handleUseItem} isCombat={false} />
+            <InventoryPanel player={gameState.player} onUseItem={handleUseItem} isCombat={false} onUnequip={handleUnequip} />
           )}
 
           {/* End state */}

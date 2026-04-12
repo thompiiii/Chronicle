@@ -103,10 +103,19 @@ const CLASS_DAMAGE_DIE = {
   Druid: 6,      Wizard: 4,  Sorcerer: 4, Warlock: 8,
 };
 
-function rollDamage(charClass, isCrit) {
-  const sides = CLASS_DAMAGE_DIE[charClass] ?? 6;
-  const base  = rollDie(sides);
-  const extra = isCrit ? rollDie(sides) : 0; // Critical: roll damage dice twice
+// Parse "2d6 slashing" → { numDice: 2, sides: 6 }. Returns null if no match.
+export function parseWeaponDice(desc) {
+  const match = (desc ?? "").match(/(\d+)d(\d+)/i);
+  if (!match) return null;
+  return { numDice: parseInt(match[1]), sides: parseInt(match[2]) };
+}
+
+function rollDamage(charClass, isCrit, weaponDice) {
+  const sides   = weaponDice?.sides   ?? (CLASS_DAMAGE_DIE[charClass] ?? 6);
+  const numDice = weaponDice?.numDice ?? 1;
+  let base = 0;
+  for (let i = 0; i < numDice; i++) base += rollDie(sides);
+  const extra = isCrit ? base : 0; // Crit: double the total
   return { total: base + extra, sides, base, extra };
 }
 
@@ -152,7 +161,7 @@ export function shouldRoll(playerInput) {
 // }
 
 export function processTurn(playerInput, gameState) {
-  const { character } = gameState;
+  const { character, equippedWeapon } = gameState;
   const stats     = character?.stats ?? {};
   const charClass = character?.class  ?? "Fighter";
 
@@ -180,7 +189,8 @@ export function processTurn(playerInput, gameState) {
 
     // ── Intent-specific resolutions ────────────────────────────────────────
     if (intent === "attack" && outcome !== "failure" && outcome !== "fumble") {
-      result.damage = rollDamage(charClass, isCrit);
+      const weaponDice = equippedWeapon ? parseWeaponDice(equippedWeapon.desc) : null;
+      result.damage = rollDamage(charClass, isCrit, weaponDice);
     }
   }
 
