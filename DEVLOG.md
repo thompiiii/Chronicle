@@ -51,7 +51,8 @@ Referenced by Claude to understand current state, past decisions, and known issu
 ```js
 player: {
   hp, maxHp,          // current and max HP
-  attack,             // base damage stat (default 5; changes on weapon equip)
+  attack,             // current damage stat (changes on weapon equip)
+  baseAttack,         // original attack value — restored on unequip (default 5)
   defense,            // unused in combat currently
   inventory,          // [{ name, type, desc, effect }]
   gold,               // integer
@@ -127,6 +128,20 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 ---
 
 ## Change History
+
+### 2026-04-12 — Restore D&D Item Autocomplete (Free-Play)
+- Restored `itemSuggestions` + `selectedDbItem` state in `App.jsx`
+- "Search or add item…" input shows up to 6 matching items from `ITEM_DB` after 2+ chars typed
+- Suggestions show type (color-coded), name, desc, weight
+- Selecting a suggestion fills name/type/desc/weight and shows a preview bar
+- Escape dismisses dropdown; Enter or Add confirms
+- Custom items (not in DB) still supported via type selector
+
+### 2026-04-12 — Equip/Unequip Weapons (Free-Play + Campaign)
+- `gameEngine.js`: added `parseWeaponDice(desc)` to parse "1d8 slashing" → `{ numDice, sides }`; `rollDamage` now accepts optional `weaponDice` override; `processTurn` reads `equippedWeapon` from gameState
+- `App.jsx`: added `equippedWeaponId` state; Equip/Unequip toggle in Bag tab; equipped weapon's dice used in free-play combat rolls
+- `campaignEngine.js`: added `baseAttack: 5` to player init; exported `unequipWeapon()` (reverts attack to baseAttack, clears equippedWeapon)
+- `CampaignScreen.jsx`: `handleUnequip` handler; `InventoryItemRow` shows Equip/Unequip/out-of-combat hint based on context; `InventoryPanel` wired with `onUnequip` prop
 
 ### 2026-04-12 — Inventory & Item Usage System
 - Added `effect` field to all items in `goblinCave.js`
