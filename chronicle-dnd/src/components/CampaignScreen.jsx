@@ -332,9 +332,8 @@ function BattleRecap({ transition, onContinue, onRetry, onBack }) {
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function CampaignScreen({ gameState, setGameState, onBack }) {
-  const [loading, setLoading]           = useState(false);
-  const [input, setInput]               = useState("");
-  const [showInventory, setShowInventory] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [input, setInput]     = useState("");
 
   const step = gameState.campaign.steps[gameState.currentStep];
 
@@ -400,18 +399,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
             <p className="text-center text-zinc-600 text-xs animate-pulse">Resolving turn…</p>
           )}
 
-          {/* Inventory toggle */}
-          <button
-            onClick={() => setShowInventory(v => !v)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 text-zinc-400 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-          >
-            <span>🎒</span>
-            <span>Inventory ({gameState.player.inventory?.length ?? 0})</span>
-            <span>{showInventory ? "▲" : "▼"}</span>
-          </button>
-          {showInventory && (
-            <InventoryPanel player={gameState.player} onUseItem={handleUseItem} isCombat={true} />
-          )}
+          <InventoryPanel player={gameState.player} onUseItem={handleUseItem} isCombat={true} />
 
           <NarrationBox text={gameState.narration} />
         </>
