@@ -151,7 +151,7 @@ function NarrationBox({ text }) {
   );
 }
 
-function BattleRecap({ transition, onContinue }) {
+function BattleRecap({ transition, onContinue, onRetry, onBack }) {
   const { outcome, battleStats, battleLog, narration } = transition;
   const isVictory = outcome === "victory";
 
@@ -216,12 +216,29 @@ function BattleRecap({ transition, onContinue }) {
         </div>
       )}
 
-      <button
-        onClick={onContinue}
-        className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition-colors cursor-pointer"
-      >
-        Continue →
-      </button>
+      {isVictory ? (
+        <button
+          onClick={onContinue}
+          className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition-colors cursor-pointer"
+        >
+          Continue →
+        </button>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={onRetry}
+            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition-colors cursor-pointer"
+          >
+            Try Again
+          </button>
+          <button
+            onClick={onBack}
+            className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold rounded-xl transition-colors cursor-pointer"
+          >
+            ← Back to Menu
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -273,6 +290,8 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
         <BattleRecap
           transition={gameState.pendingTransition}
           onContinue={() => setGameState(prev => goToStep(prev, prev.pendingTransition.nextStep))}
+          onRetry={() => setGameState(createCampaignState(gameState.campaign))}
+          onBack={onBack}
         />
       )}
 
