@@ -570,6 +570,8 @@ export default function App() {
   const [deathSaves, setDeathSaves] = useState({ successes: 0, failures: 0 });
   const [newItemName, setNewItemName] = useState("");
   const [newItemType, setNewItemType] = useState("Misc");
+  const [itemSuggestions, setItemSuggestions] = useState([]);
+  const [selectedDbItem, setSelectedDbItem] = useState(null);
   const [charStep, setCharStep] = useState(0);
   const [charBackground, setCharBackground] = useState("acolyte");
   const [thinkingIdx, setThinkingIdx] = useState(0);
@@ -1302,33 +1304,76 @@ export default function App() {
               <span>{inventory.length} items</span>
               <span>{inventory.reduce((a, i) => a + i.weight * i.qty, 0).toFixed(1)} lb total</span>
             </div>
-            {/* Add item */}
-            <div className="mt-2 pt-2 border-t border-zinc-800 flex gap-1">
-              <input
-                className="bg-black border border-zinc-800 rounded-lg px-2 py-1 text-white placeholder-zinc-700 text-xs focus:outline-none focus:border-amber-500 flex-1"
-                placeholder="Add item…"
-                value={newItemName}
-                onChange={e => setNewItemName(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && newItemName.trim()) {
-                    setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
-                    setNewItemName("");
-                  }
-                }}
-              />
-              <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
-                className="bg-black border border-zinc-800 rounded-lg px-1 py-1 text-white text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
-                {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
-              </select>
-              <button
-                onClick={() => {
-                  if (!newItemName.trim()) return;
-                  setInventory(inv => [...inv, { id: Date.now(), name: newItemName.trim(), type: newItemType, weight: 0, desc: "", qty: 1 }]);
-                  setNewItemName("");
-                }}
-                className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded-lg text-xs cursor-pointer transition-colors font-bold">
-                Add
-              </button>
+            {/* Add item with autocomplete */}
+            <div className="mt-2 pt-2 border-t border-zinc-800">
+              {itemSuggestions.length > 0 && (
+                <div className="mb-1 rounded-lg border border-zinc-800 overflow-hidden">
+                  {itemSuggestions.map(item => (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        setNewItemName(item.name);
+                        setNewItemType(item.type);
+                        setSelectedDbItem(item);
+                        setItemSuggestions([]);
+                      }}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-left transition-colors cursor-pointer border-b border-zinc-800 last:border-0"
+                    >
+                      <span className={`text-xs font-medium w-14 flex-shrink-0 ${TYPE_COLORS[item.type]}`}>{item.type}</span>
+                      <span className="text-white text-xs font-medium flex-shrink-0">{item.name}</span>
+                      <span className="text-zinc-600 text-xs truncate">{item.desc}</span>
+                      <span className="text-zinc-700 text-xs flex-shrink-0 ml-auto">{item.weight} lb</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedDbItem && (
+                <div className="mb-1 px-2 py-1 bg-amber-900/20 border border-amber-900/40 rounded-lg">
+                  <p className="text-amber-400 text-xs">{selectedDbItem.desc} · {selectedDbItem.weight} lb</p>
+                </div>
+              )}
+              <div className="flex gap-1">
+                <input
+                  className="bg-black border border-zinc-800 rounded-lg px-2 py-1 text-white placeholder-zinc-700 text-xs focus:outline-none focus:border-amber-500 flex-1"
+                  placeholder="Search or add item…"
+                  value={newItemName}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setNewItemName(val);
+                    setSelectedDbItem(null);
+                    if (val.trim().length >= 2) {
+                      const q = val.toLowerCase();
+                      setItemSuggestions(ITEM_DB.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6));
+                    } else {
+                      setItemSuggestions([]);
+                    }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && newItemName.trim()) {
+                      const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
+                      setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
+                      setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
+                    }
+                    if (e.key === "Escape") setItemSuggestions([]);
+                  }}
+                />
+                {!selectedDbItem && (
+                  <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
+                    className="bg-black border border-zinc-800 rounded-lg px-1 py-1 text-white text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
+                    {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
+                  </select>
+                )}
+                <button
+                  onClick={() => {
+                    if (!newItemName.trim()) return;
+                    const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
+                    setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
+                    setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
+                  }}
+                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded-lg text-xs cursor-pointer transition-colors font-bold flex-shrink-0">
+                  Add
+                </button>
+              </div>
             </div>
           </div>
         </div>
