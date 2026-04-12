@@ -61,8 +61,9 @@ export const goblinCaveCampaign = {
       loot: {
         gold:  8,
         items: [
-          { name: "Shortsword",    type: "Weapon",     desc: "1d6 piercing · looted from the patrol",           effect: { type: "weapon", attack: 6 } },
+          { name: "Shortsword",    type: "Weapon",     desc: "1d6 piercing · looted from the patrol",                    effect: { type: "weapon", attack: 6 } },
           { name: "Storeroom Key", type: "Misc",       desc: "A tarnished iron key — opens something deeper in the cave", effect: null },
+          { name: "Health Potion", type: "Consumable", desc: "Restores 2d4+2 HP",                                        effect: { type: "heal", numDice: 2, sides: 4, bonus: 2 } },
         ],
       },
       next: "inner-cave",
@@ -86,8 +87,22 @@ export const goblinCaveCampaign = {
       title: "Sleeping Goblin",
       text:  "You move to dispatch the goblin — but it snorts awake at the last moment.",
       enemy: { name: "Groggy Goblin", hp: 5, attack: 2, xp: 25, difficulty: 8 },
-      onVictory: "inner-cave",
+      onVictory: "sleeper-loot",
       onDefeat:  "defeat",
+    },
+
+    "sleeper-loot": {
+      id:    "sleeper-loot",
+      type:  "loot",
+      title: "Search the Alcove",
+      text:  "The goblin slumps. You rifle through its tattered vest and find a small vial — a healing potion, probably nicked from a merchant. The crates around you hold stolen goods, but nothing else worth taking.",
+      loot: {
+        gold:  5,
+        items: [
+          { name: "Health Potion", type: "Consumable", desc: "Restores 2d4+2 HP", effect: { type: "heal", numDice: 2, sides: 4, bonus: 2 } },
+        ],
+      },
+      next: "inner-cave",
     },
 
     // ── 2c. Watch → spot weakness ─────────────────────────────────────────
