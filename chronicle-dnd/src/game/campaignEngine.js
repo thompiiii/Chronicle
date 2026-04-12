@@ -222,9 +222,7 @@ export async function resolveStep(gameState, playerInput) {
     if (combatOver) {
       const outcome  = enemy.hp <= 0 ? "victory" : "defeat";
       const nextStep = outcome === "victory" ? step.onVictory : step.onDefeat;
-      if (outcome === "victory") {
-        next.player = { ...next.player, gold: next.player.gold + (step.enemy.xp ?? 0) };
-      }
+      // gold is awarded via the loot step, not here
       const narration = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit, isCrit });
       return {
         ...next,
