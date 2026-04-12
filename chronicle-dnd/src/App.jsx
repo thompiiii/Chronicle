@@ -1052,7 +1052,7 @@ export default function App() {
           <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-950 border border-red-800 text-xs font-bold text-red-300">
             ❤️ {currentHp}/{character?.hp}
           </div>
-          <button onClick={() => setVoiceEnabled(!voiceEnabled)}
+          <button onClick={() => { if (voiceEnabled) window.speechSynthesis?.cancel(); setVoiceEnabled(!voiceEnabled); }}
             className="w-9 h-9 rounded-full bg-zinc-900 flex items-center justify-center text-base cursor-pointer hover:bg-zinc-800 transition-colors">
             {voiceEnabled ? "🔊" : "🔇"}
           </button>
