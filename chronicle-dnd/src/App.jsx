@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { processTurn, applyTurnToState, formatRollSummary, shouldRoll } from "./game/gameEngine";
 import { getNarration } from "./game/aiClient";
-import { lookupEnemy, startEncounter, resolveEncounterRound } from "./game/encounterEngine";
+import { lookupEnemy, startEncounter, resolveEncounterRound, rollLoot } from "./game/encounterEngine";
 import { createCampaignState } from "./game/campaignEngine";
 import { goblinCaveCampaign } from "./campaigns/goblinCave";
 import CampaignScreen from "./components/CampaignScreen";
@@ -162,7 +162,6 @@ const TAB_BUTTONS = [
   { id: "dice",      label: "🎲 Dice" },
   { id: "sheet",     label: "📜 Sheet" },
   { id: "inventory", label: "🎒 Bag" },
-  { id: "combat",    label: "⚔️ Fight" },
   { id: "notes",     label: "📝 Notes" },
 ];
 
@@ -730,6 +729,26 @@ function EncounterRecap({ recap, onDismiss }) {
           <p className="text-zinc-300 text-xs leading-relaxed font-serif">{recap.narration}</p>
         </div>
       )}
+      {recap.loot && (recap.loot.gold > 0 || recap.loot.items.length > 0) && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[10px] uppercase tracking-widest text-zinc-600">Loot</p>
+          {recap.loot.gold > 0 && (
+            <div className="flex items-center gap-2 bg-yellow-950/30 border border-yellow-900/50 rounded-lg px-3 py-1.5">
+              <span>🪙</span>
+              <span className="text-yellow-300 text-xs font-semibold">+{recap.loot.gold} gold</span>
+            </div>
+          )}
+          {recap.loot.items.map((item, i) => (
+            <div key={i} className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5">
+              <span className="text-sm">{item.type === "Weapon" ? "⚔️" : item.type === "Armor" ? "🛡️" : item.type === "Consumable" ? "🧪" : "📦"}</span>
+              <div>
+                <p className="text-white text-xs font-semibold">{item.name}</p>
+                <p className="text-zinc-500 text-[10px]">{item.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <button onClick={onDismiss} className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold rounded-xl text-sm transition-colors cursor-pointer">
         Continue →
       </button>
@@ -977,7 +996,6 @@ export default function App() {
           if (enemy) {
             activeEncounter = startEncounter(enemy, character?.stats);
             setEncounterState(activeEncounter);
-            setActiveTab("combat");
             setMessages(prev => [...prev, makeMsg("roll", `⚔️ ${enemy.name} appears! (${enemy.tierLabel ?? "?"}) — Combat begins`)]);
           }
         }
@@ -996,7 +1014,12 @@ export default function App() {
           );
 
           if (combatOver) {
-            setPendingRecap({ outcome, ...nextEncounter.battleStats, battleLog: nextEncounter.battleLog, narration });
+            const loot = outcome === "victory" ? rollLoot(activeEncounter.enemy.tier) : null;
+            if (loot) {
+              setGold(g => g + loot.gold);
+              if (loot.items.length > 0) setInventory(inv => [...inv, ...loot.items]);
+            }
+            setPendingRecap({ outcome, ...nextEncounter.battleStats, battleLog: nextEncounter.battleLog, narration, loot });
             setEncounterState(null);
           } else {
             setEncounterState({ ...nextEncounter, narration });
@@ -1404,9 +1427,6 @@ export default function App() {
 
       {/* Dice Panel */}
       {activeTab === "dice" && <DiceRoller onRollToChat={handleRollToChat} />}
-
-      {/* Combat Tracker Panel */}
-      {activeTab === "combat" && <CombatTracker character={character} currentHp={currentHp} encounterState={encounterState} />}
 
       {/* Character Sheet Panel */}
       {activeTab === "sheet" && character && (() => {

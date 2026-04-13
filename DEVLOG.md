@@ -129,6 +129,16 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-13 — Remove Fight Tab + Tier-Appropriate Loot Tables
+- `TAB_BUTTONS` in `App.jsx`: removed `{ id: "combat", label: "⚔️ Fight" }` — manual initiative tracker was redundant now that `EncounterOverlay` handles all combat UI
+- `encounterEngine.js`: added `LOOT_TABLES` (4 tiers) and exported `rollLoot(tier)`:
+  - Tier 1 Trivial: 0–3 gp; Torch 30%, Rations 25%, Minor Healing Vial 20%, Tinderbox 10%
+  - Tier 2 Standard: 2–12 gp; Health Potion 55%, Antitoxin 30%, Dagger 25%, Thieves' Tools 20%, Oil Flask 15%
+  - Tier 3 Elite: 14–50 gp; Health Potion 90%, Greater Health Potion 50%, Shortsword 40%, Studded Leather 30%, Healer's Kit 25%, Rope 20%
+  - Tier 4 Boss: 65–200 gp; Greater Health Potion 100%, Superior Health Potion 70%, Longsword 65%, Chain Mail 50%, Shield 45%, Potion of Heroism 35%, Arcane Focus 25%
+- `App.jsx` victory path: calls `rollLoot(tier)`, adds gold and items to free-play inventory, includes `loot` in `pendingRecap`
+- `EncounterRecap` component: new Loot section below narration — gold card (yellow-themed) + item cards (icon, name, desc) for each dropped item
+
 ### 2026-04-13 — Fight Tab: Live Combat Dashboard
 - `encounterEngine.js`: `startEncounter` now accepts `playerStats`; rolls initiative for player (d20 + DEX mod) and enemy (d20 + tier bonus 0–3); stores `initiative: { player, enemy, playerFirst }` in encounter state
 - `App.jsx`: extracted `LiveCombatView` component — shown in Fight tab when encounter is active; shows round counter, initiative-order badge (green "You go first" / red "Enemy goes first"), HP bars for both combatants sorted by initiative, real-time dealt/taken/crit/fumble stats, scrollable full battle log

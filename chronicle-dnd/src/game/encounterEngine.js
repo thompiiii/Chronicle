@@ -211,3 +211,66 @@ export function resolveEncounterRound(encounter, turnResult, playerHp, actionHin
     outcome,
   };
 }
+
+// ── Loot Tables ───────────────────────────────────────────────────────────────
+
+const LOOT_TABLES = {
+  // Tier 1 — Trivial (rats, bats, kobolds, skeletons…)
+  1: {
+    gold:  () => rollDie(4) - 1,   // 0–3 gp — scraps and loose coin
+    items: [
+      { chance: 0.30, item: { name: "Torch",              type: "Consumable", weight: 1,   desc: "Bright light 20 ft · 1 hour" } },
+      { chance: 0.25, item: { name: "Rations",            type: "Consumable", weight: 2,   desc: "One day of food and water" } },
+      { chance: 0.20, item: { name: "Minor Healing Vial", type: "Consumable", weight: 0.5, desc: "Restores 1d4 HP", effect: { type: "heal", numDice: 1, sides: 4, bonus: 0 } } },
+      { chance: 0.10, item: { name: "Tinderbox",          type: "Misc",       weight: 1,   desc: "Start a fire in one action" } },
+    ],
+  },
+
+  // Tier 2 — Standard (goblins, bandits, wolves…)
+  2: {
+    gold:  () => rollDie(6) + rollDie(6),   // 2–12 gp
+    items: [
+      { chance: 0.55, item: { name: "Health Potion",    type: "Consumable", weight: 0.5, desc: "Restores 2d4+2 HP", effect: { type: "heal", numDice: 2, sides: 4, bonus: 2 } } },
+      { chance: 0.30, item: { name: "Antitoxin",        type: "Consumable", weight: 0,   desc: "Advantage on CON saves vs poison for 1 hour" } },
+      { chance: 0.25, item: { name: "Dagger",           type: "Weapon",     weight: 1,   desc: "1d4 piercing · Finesse, Light, Thrown (20/60)" } },
+      { chance: 0.20, item: { name: "Thieves' Tools",   type: "Tool",       weight: 1,   desc: "Pick locks and disarm traps" } },
+      { chance: 0.15, item: { name: "Oil Flask",        type: "Consumable", weight: 1,   desc: "Deal 5 fire damage if ignited" } },
+    ],
+  },
+
+  // Tier 3 — Elite (orcs, trolls, veterans…)
+  3: {
+    gold:  () => rollDie(10) * 2 + rollDie(10) * 2 + 10,  // 14–50 gp
+    items: [
+      { chance: 0.90, item: { name: "Health Potion",         type: "Consumable", weight: 0.5, desc: "Restores 2d4+2 HP", effect: { type: "heal", numDice: 2, sides: 4, bonus: 2 } } },
+      { chance: 0.50, item: { name: "Greater Health Potion", type: "Consumable", weight: 0.5, desc: "Restores 4d4+4 HP", effect: { type: "heal", numDice: 4, sides: 4, bonus: 4 } } },
+      { chance: 0.40, item: { name: "Shortsword",            type: "Weapon",     weight: 2,   desc: "1d6 piercing · Finesse, Light" } },
+      { chance: 0.30, item: { name: "Studded Leather",       type: "Armor",      weight: 13,  desc: "AC 12 + DEX · Light armor" } },
+      { chance: 0.25, item: { name: "Healer's Kit",          type: "Consumable", weight: 3,   desc: "Stabilize a dying creature · 10 uses" } },
+      { chance: 0.20, item: { name: "Rope (Hempen)",         type: "Misc",       weight: 10,  desc: "50 feet · supports up to 1,500 lbs" } },
+    ],
+  },
+
+  // Tier 4 — Boss (dragons, vampires, liches…)
+  4: {
+    gold:  () => rollDie(10) * 10 + rollDie(10) * 5 + 50,  // 65–200 gp
+    items: [
+      { chance: 1.00, item: { name: "Greater Health Potion",   type: "Consumable", weight: 0.5, desc: "Restores 4d4+4 HP", effect: { type: "heal", numDice: 4, sides: 4, bonus: 4 } } },
+      { chance: 0.70, item: { name: "Superior Health Potion",  type: "Consumable", weight: 0.5, desc: "Restores 8d4+8 HP", effect: { type: "heal", numDice: 8, sides: 4, bonus: 8 } } },
+      { chance: 0.65, item: { name: "Longsword",               type: "Weapon",     weight: 3,   desc: "1d8 slashing · Versatile (1d10)" } },
+      { chance: 0.50, item: { name: "Chain Mail",              type: "Armor",      weight: 55,  desc: "AC 16 · Heavy armor, Disadvantage on Stealth" } },
+      { chance: 0.45, item: { name: "Shield",                  type: "Armor",      weight: 6,   desc: "+2 AC" } },
+      { chance: 0.35, item: { name: "Potion of Heroism",       type: "Consumable", weight: 0.5, desc: "Gain 10 temporary HP and the Bless effect for 1 hour" } },
+      { chance: 0.25, item: { name: "Arcane Focus",            type: "Misc",       weight: 1,   desc: "Spellcasting focus for arcane spells" } },
+    ],
+  },
+};
+
+export function rollLoot(tier) {
+  const table = LOOT_TABLES[tier] ?? LOOT_TABLES[1];
+  const gold  = Math.max(0, table.gold());
+  const items = table.items
+    .filter(entry => Math.random() < entry.chance)
+    .map((entry, i) => ({ ...entry.item, id: Date.now() + i, qty: 1 }));
+  return { gold, items };
+}
