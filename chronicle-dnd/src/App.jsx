@@ -676,6 +676,14 @@ function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack,
         </div>
       )}
 
+      {/* Narration */}
+      {encounter.narration && (
+        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-2">
+          <p className="text-zinc-300 text-xs leading-relaxed font-serif line-clamp-3">{encounter.narration}</p>
+        </div>
+      )}
+      {loading && <p className="text-center text-zinc-600 text-xs animate-pulse">Resolving turn…</p>}
+
       {/* Action buttons */}
       <div className="flex gap-1.5">
         <button onClick={onAttack} disabled={loading} className={`${btn} bg-red-900 hover:bg-red-800 text-white`}>
@@ -717,6 +725,11 @@ function EncounterRecap({ recap, onDismiss }) {
           <span className="text-zinc-400">↺ {recap.rounds}</span>
         </div>
       </div>
+      {recap.narration && (
+        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-2">
+          <p className="text-zinc-300 text-xs leading-relaxed font-serif">{recap.narration}</p>
+        </div>
+      )}
       <button onClick={onDismiss} className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold rounded-xl text-sm transition-colors cursor-pointer">
         Continue →
       </button>
@@ -983,14 +996,16 @@ export default function App() {
           );
 
           if (combatOver) {
-            setPendingRecap({ outcome, ...nextEncounter.battleStats, battleLog: nextEncounter.battleLog });
+            setPendingRecap({ outcome, ...nextEncounter.battleStats, battleLog: nextEncounter.battleLog, narration });
             setEncounterState(null);
           } else {
-            setEncounterState(nextEncounter);
+            setEncounterState({ ...nextEncounter, narration });
           }
 
           if (narration) {
-            setMessages(prev => [...prev, makeMsg("dm", narration)]);
+            // Narration is shown inside EncounterOverlay during combat.
+            // Only push to chat when combat ends so the log is preserved.
+            if (combatOver) setMessages(prev => [...prev, makeMsg("dm", narration)]);
             speakText(narration);
             triggerSaveFlash();
           }
