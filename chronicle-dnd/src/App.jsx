@@ -605,10 +605,12 @@ function EncounterHpBar({ current, max, color = "bg-green-500" }) {
   );
 }
 
-function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack, onHeavy, onDefend, onFlee }) {
-  const { enemy, lastCombatLog, lastRoll, battleStats } = encounter;
+function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack, onHeavy, onDefend, onFlee, onDeathSave }) {
+  const { enemy, lastCombatLog, lastRoll, battleStats, dying, deathSaves } = encounter;
 
+  const isDeathSave = lastRoll?.action === "deathsave";
   const playerColor = !lastRoll            ? "text-zinc-400"
+    : isDeathSave                          ? (lastRoll.playerRoll >= 10 ? "text-green-400" : "text-red-400")
     : lastRoll.isCrit                      ? "text-yellow-300"
     : lastRoll.isFumble                    ? "text-red-400"
     : lastRoll.action === "defend"         ? "text-blue-300"
@@ -634,35 +636,64 @@ function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack,
           <p className="text-white text-xs font-semibold leading-none">{enemy.name}</p>
           <EncounterHpBar current={enemy.hp} max={enemy.maxHp} color="bg-red-500" />
         </div>
-        <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 flex flex-col gap-1">
+        <div className={`flex-1 border rounded-xl px-3 py-2 flex flex-col gap-1 ${dying ? "bg-red-950/40 border-red-900 animate-pulse" : "bg-zinc-900 border-zinc-800"}`}>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500">You</span>
-            <span className={`text-[10px] font-mono ${playerHp <= Math.ceil(playerMaxHp * 0.25) ? "text-red-400" : "text-green-400"}`}>{playerHp}/{playerMaxHp} HP</span>
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">{dying ? "💀 Dying" : "You"}</span>
+            <span className={`text-[10px] font-mono ${dying ? "text-red-400" : playerHp <= Math.ceil(playerMaxHp * 0.25) ? "text-red-400" : "text-green-400"}`}>
+              {playerHp}/{playerMaxHp} HP
+            </span>
           </div>
           <p className="text-white text-xs font-semibold leading-none">Round {battleStats.rounds + 1}</p>
           <EncounterHpBar current={playerHp} max={playerMaxHp} />
         </div>
       </div>
 
+      {/* Death save tracker */}
+      {dying && (
+        <div className="bg-red-950/30 border border-red-900/60 rounded-xl px-3 py-2 flex items-center justify-between">
+          <span className="text-red-300 text-[11px] font-bold uppercase tracking-widest">Death Saves</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-green-400 font-mono">✓</span>
+              {[0,1,2].map(i => (
+                <div key={i} className={`w-4 h-4 rounded-full border ${i < deathSaves.successes ? "bg-green-500 border-green-400" : "bg-zinc-800 border-zinc-700"}`} />
+              ))}
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] text-red-400 font-mono">✗</span>
+              {[0,1,2].map(i => (
+                <div key={i} className={`w-4 h-4 rounded-full border ${i < deathSaves.failures ? "bg-red-500 border-red-400" : "bg-zinc-800 border-zinc-700"}`} />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dice display */}
       {lastRoll && (
         <div className="flex gap-2">
           <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 py-1.5">
-            <span className="text-[10px] text-zinc-500">⚔️ You</span>
+            <span className="text-[10px] text-zinc-500">{isDeathSave ? "💫 Death Save" : "⚔️ You"}</span>
             <span className={`text-2xl font-black leading-none ${playerColor}`}>
               {lastRoll.action === "defend" ? "—" : lastRoll.playerRoll}
             </span>
             <span className={`text-[10px] font-bold ${playerColor}`}>
-              {lastRoll.action === "defend" ? "STANCE" : lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE" : lastRoll.playerHit ? "HIT" : "MISS"}
+              {isDeathSave
+                ? (lastRoll.playerRoll >= 10 ? "SUCCESS" : "FAILURE")
+                : lastRoll.action === "defend" ? "STANCE"
+                : lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE"
+                : lastRoll.playerHit ? "HIT" : "MISS"}
             </span>
           </div>
-          <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 py-1.5">
-            <span className="text-[10px] text-zinc-500">👺 {enemy.name}</span>
-            <span className={`text-2xl font-black leading-none ${enemyColor}`}>{lastRoll.enemyRoll || "—"}</span>
-            <span className={`text-[10px] font-bold ${enemyColor}`}>
-              {lastRoll.enemyResult === "miss" ? "MISS" : lastRoll.enemyResult === "heavy" ? "HEAVY" : "HIT"}
-            </span>
-          </div>
+          {!isDeathSave && (
+            <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 py-1.5">
+              <span className="text-[10px] text-zinc-500">👺 {enemy.name}</span>
+              <span className={`text-2xl font-black leading-none ${enemyColor}`}>{lastRoll.enemyRoll || "—"}</span>
+              <span className={`text-[10px] font-bold ${enemyColor}`}>
+                {lastRoll.enemyResult === "miss" ? "MISS" : lastRoll.enemyResult === "heavy" ? "HEAVY" : "HIT"}
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -683,21 +714,27 @@ function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack,
       )}
       {loading && <p className="text-center text-zinc-600 text-xs animate-pulse">Resolving turn…</p>}
 
-      {/* Action buttons */}
-      <div className="flex gap-1.5">
-        <button onClick={onAttack} disabled={loading} className={`${btn} bg-red-900 hover:bg-red-800 text-white`}>
-          <span className="text-base">⚔️</span>Attack
+      {/* Action buttons — death save mode or normal */}
+      {dying ? (
+        <button onClick={onDeathSave} disabled={loading} className={`${btn} w-full bg-red-900/60 hover:bg-red-800 border border-red-700 text-red-200 py-3`}>
+          <span className="text-lg">🎲</span>Roll Death Save
         </button>
-        <button onClick={onHeavy} disabled={loading} className={`${btn} bg-orange-900 hover:bg-orange-800 text-white`}>
-          <span className="text-base">💥</span>Heavy
-        </button>
-        <button onClick={onDefend} disabled={loading} className={`${btn} bg-blue-900 hover:bg-blue-800 text-white`}>
-          <span className="text-base">🛡️</span>Defend
-        </button>
-        <button onClick={onFlee} disabled={loading} className={`${btn} bg-zinc-800 hover:bg-zinc-700 text-zinc-300`}>
-          <span className="text-base">🏃</span>Flee
-        </button>
-      </div>
+      ) : (
+        <div className="flex gap-1.5">
+          <button onClick={onAttack} disabled={loading} className={`${btn} bg-red-900 hover:bg-red-800 text-white`}>
+            <span className="text-base">⚔️</span>Attack
+          </button>
+          <button onClick={onHeavy} disabled={loading} className={`${btn} bg-orange-900 hover:bg-orange-800 text-white`}>
+            <span className="text-base">💥</span>Heavy
+          </button>
+          <button onClick={onDefend} disabled={loading} className={`${btn} bg-blue-900 hover:bg-blue-800 text-white`}>
+            <span className="text-base">🛡️</span>Defend
+          </button>
+          <button onClick={onFlee} disabled={loading} className={`${btn} bg-zinc-800 hover:bg-zinc-700 text-zinc-300`}>
+            <span className="text-base">🏃</span>Flee
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -951,11 +988,40 @@ export default function App() {
     // Skip it for: manual dice rolls, CONTINUE, and pre-game screens.
     const useEngine = !skipEngine && character !== null;
 
-    setMessages(prev => [...prev, makeMsg("player", msg, { name: character?.name })]);
+    // Don't add a player message for death saves — the combat log shows the roll instead
+    if (combatActionHint !== "deathsave") {
+      setMessages(prev => [...prev, makeMsg("player", msg, { name: character?.name })]);
+    }
     setLoading(true);
 
     try {
       if (useEngine) {
+        // ── Death save short-circuit ──────────────────────────────────────
+        // When the player is dying, skip processTurn entirely and resolve
+        // a death save directly in resolveEncounterRound.
+        if (combatActionHint === "deathsave" && encounterState?.dying) {
+          const { nextEncounter, playerHpDelta, combatOver, outcome } =
+            resolveEncounterRound(encounterState, {}, currentHp, "deathsave");
+
+          setCurrentHp(h => Math.max(0, h + playerHpDelta));
+
+          const narration = await getNarration(
+            { action: "death save", intent: "deathsave", rawRoll: nextEncounter.lastRoll?.playerRoll, outcome: null },
+            { character, messages, encounter: nextEncounter },
+            { onError: (e) => setMessages(prev => [...prev, makeMsg("dm", `⚠️ ${e}`)]) }
+          );
+
+          if (combatOver) {
+            setPendingRecap({ outcome, ...nextEncounter.battleStats, battleLog: nextEncounter.battleLog, narration, loot: null });
+            setEncounterState(null);
+            if (narration) setMessages(prev => [...prev, makeMsg("dm", narration)]);
+          } else {
+            setEncounterState({ ...nextEncounter, narration });
+          }
+          setLoading(false);
+          return;
+        }
+
         // ── Game Engine Path ──────────────────────────────────────────────
         // Step 1: resolve action in code — dice roll + outcome determined here,
         //         BEFORE the AI is ever called.
@@ -1723,8 +1789,9 @@ export default function App() {
           loading={loading}
           onAttack={() => sendMessage("I attack!", false, "attack")}
           onHeavy={()  => sendMessage("Heavy attack!", false, "heavy")}
-          onDefend={() => sendMessage("I defend!", false, "defend")}
-          onFlee={()   => sendMessage("I flee!", false, "flee")}
+          onDefend={()    => sendMessage("I defend!", false, "defend")}
+          onFlee={()      => sendMessage("I flee!", false, "flee")}
+          onDeathSave={()  => sendMessage("", false, "deathsave")}
         />
       )}
 

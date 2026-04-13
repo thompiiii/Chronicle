@@ -129,6 +129,17 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-13 — Death Saving Throws (Free-Play Encounters)
+- `encounterEngine.js`: added `dying: false` and `deathSaves: { successes: 0, failures: 0 }` to encounter state shape (`startEncounter`)
+- `resolveEncounterRound`: when `encounter.dying` or `actionHint === "deathsave"`, enters death save path instead of normal combat:
+  - Rolls d20 internally; 10+ = success, 9 or less = failure
+  - 3 successes → `dying: false`, `playerHpDelta: 1` (stabilizes at 1 HP), resets save counters, combat continues (player can flee)
+  - 3 failures → `combatOver: true`, `outcome: "defeat"`
+  - Otherwise → updates `deathSaves`, returns `combatOver: false`
+- Normal path: when player HP hits 0 and enemy is alive, sets `dying: true` instead of ending combat immediately; adds "You fall unconscious!" log line
+- `App.jsx`: death save short-circuit in `sendMessage` — skips `processTurn` and goes straight to `resolveEncounterRound` with `"deathsave"` hint; no player chat message added for saves
+- `EncounterOverlay`: when `dying`, shows pulsing red player panel, death save tracker (3 success / 3 failure dots filled progressively), single "🎲 Roll Death Save" button replacing normal action buttons; dice display shows SUCCESS/FAILURE label for save rolls
+
 ### 2026-04-13 — Fix: HP Now Resets Between Free-Play Encounters
 - `App.jsx`: on encounter `victory` or `fled` outcome, `setCurrentHp(character.hp)` restores HP to max before setting `pendingRecap`
 - This prevents free-play `currentHp` from bleeding into subsequent encounters (HP now works per-encounter, not per-session)

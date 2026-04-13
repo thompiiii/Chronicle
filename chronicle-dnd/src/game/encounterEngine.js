@@ -77,6 +77,8 @@ export function startEncounter(enemy, playerStats) {
     battleLog:     [],
     lastCombatLog: [],
     lastRoll:      null,
+    dying:         false,
+    deathSaves:    { successes: 0, failures: 0 },
   };
 }
 
@@ -93,7 +95,7 @@ function resolveEnemyTurn(enemy) {
 //
 // turnResult — from processTurn() in gameEngine.js
 // playerHp   — current player HP before this round
-// actionHint — "attack" | "heavy" | "defend" | "flee" (from button presses)
+// actionHint — "attack" | "heavy" | "defend" | "flee" | "deathsave"
 //              overrides intent when player uses fixed action buttons
 //
 // Returns:
@@ -104,6 +106,83 @@ export function resolveEncounterRound(encounter, turnResult, playerHp, actionHin
   const enemy      = { ...encounter.enemy };
   const combatLog  = [];
 
+  // ── Death save path ───────────────────────────────────────────────────────────
+  // Entered when the player is already dying (HP ≤ 0) or the actionHint is
+  // "deathsave". Normal combat is skipped entirely.
+  if (encounter.dying || actionHint === "deathsave") {
+    const roll    = rollDie(20);
+    const success = roll >= 10;
+    const prev    = encounter.deathSaves;
+    const deathSaves = {
+      successes: prev.successes + (success ? 1 : 0),
+      failures:  prev.failures  + (success ? 0 : 1),
+    };
+
+    combatLog.push(
+      success
+        ? `💫 Death Save (${roll}) → SUCCESS (${deathSaves.successes}/3 successes)`
+        : `💀 Death Save (${roll}) → FAILURE (${deathSaves.failures}/3 failures)`
+    );
+
+    // 3 successes — stabilize at 1 HP, re-enter normal combat
+    if (deathSaves.successes >= 3) {
+      combatLog.push("✨ You stabilize and regain consciousness at 1 HP!");
+      return {
+        nextEncounter: {
+          ...encounter,
+          enemy,
+          dying:         false,
+          deathSaves:    { successes: 0, failures: 0 },
+          battleLog:     [...encounter.battleLog, ...combatLog],
+          lastCombatLog: combatLog,
+          lastRoll:      { playerRoll: roll, isCrit: false, isFumble: false, action: "deathsave", enemyRoll: 0, enemyResult: "miss" },
+        },
+        combatLines:   combatLog,
+        playerHpDelta: 1,   // brings HP from 0 → 1
+        combatOver:    false,
+        outcome:       null,
+      };
+    }
+
+    // 3 failures — death
+    if (deathSaves.failures >= 3) {
+      combatLog.push("☠️ You succumb to your wounds...");
+      return {
+        nextEncounter: {
+          ...encounter,
+          enemy,
+          dying:         true,
+          deathSaves,
+          battleLog:     [...encounter.battleLog, ...combatLog],
+          lastCombatLog: combatLog,
+          lastRoll:      { playerRoll: roll, isCrit: false, isFumble: false, action: "deathsave", enemyRoll: 0, enemyResult: "miss" },
+        },
+        combatLines:   combatLog,
+        playerHpDelta: 0,
+        combatOver:    true,
+        outcome:       "defeat",
+      };
+    }
+
+    // Still dying — neither 3 successes nor 3 failures yet
+    return {
+      nextEncounter: {
+        ...encounter,
+        enemy,
+        dying:         true,
+        deathSaves,
+        battleLog:     [...encounter.battleLog, ...combatLog],
+        lastCombatLog: combatLog,
+        lastRoll:      { playerRoll: roll, isCrit: false, isFumble: false, action: "deathsave", enemyRoll: 0, enemyResult: "miss" },
+      },
+      combatLines:   combatLog,
+      playerHpDelta: 0,
+      combatOver:    false,
+      outcome:       null,
+    };
+  }
+
+  // ── Normal combat path ────────────────────────────────────────────────────────
   const action = actionHint
     ?? (turnResult.intent === "flee"   ? "flee"
       : turnResult.intent === "defend" ? "defend"
@@ -188,8 +267,16 @@ export function resolveEncounterRound(encounter, turnResult, playerHp, actionHin
   };
 
   const newPlayerHp = Math.max(0, playerHp - actualTaken);
-  const combatOver  = enemy.hp <= 0 || newPlayerHp <= 0;
-  const outcome     = enemy.hp <= 0 ? "victory" : newPlayerHp <= 0 ? "defeat" : null;
+
+  // If the player just hit 0 HP (and enemy is still alive), enter dying state
+  // instead of ending combat immediately.
+  const playerWentDown = newPlayerHp <= 0 && enemy.hp > 0;
+  if (playerWentDown) {
+    combatLog.push("💔 You fall unconscious! Make death saving throws to survive...");
+  }
+
+  const combatOver = enemy.hp <= 0;   // only enemy death ends combat normally
+  const outcome    = enemy.hp <= 0 ? "victory" : null;
 
   const lastRoll = {
     playerRoll: rawRoll, playerHit, isCrit, isFumble, action,
@@ -201,6 +288,8 @@ export function resolveEncounterRound(encounter, turnResult, playerHp, actionHin
       ...encounter,
       enemy,
       battleStats,
+      dying:         playerWentDown,
+      deathSaves:    playerWentDown ? { successes: 0, failures: 0 } : encounter.deathSaves,
       battleLog:     [...encounter.battleLog, ...combatLog],
       lastCombatLog: combatLog,
       lastRoll,
