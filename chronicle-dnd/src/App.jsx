@@ -884,7 +884,7 @@ export default function App() {
             text: `Based on this context, generate combat stats for the enemy the player is about to fight.\n\nDM narration: ${dmContext}\nPlayer action: "${playerMessage}"\n\nRespond with ONLY a JSON object, nothing else:\n{"name":"Enemy Name","hp":14,"attack":3,"difficulty":11,"tier":2,"tierLabel":"Standard"}\n\nTier guide: 1=Trivial(hp 6,atk 2,dc 8) 2=Standard(hp 14,atk 3,dc 11) 3=Elite(hp 28,atk 5,dc 14) 4=Boss(hp 52,atk 8,dc 17)`
           }],
           character: null,
-          mode: "narration",
+          mode: "encounter",
         }),
       });
       if (!response.ok) return null;
@@ -901,7 +901,7 @@ export default function App() {
           try { const p = JSON.parse(d); if (p.text) text += p.text; } catch {}
         }
       }
-      const match = text.match(/\{[\s\S]*?\}/);
+      const match = text.match(/\{[\s\S]*\}/);
       if (!match) return null;
       const parsed = JSON.parse(match[0]);
       return { ...parsed, maxHp: parsed.hp };
@@ -948,7 +948,15 @@ export default function App() {
         // Auto-start an encounter when an attack intent is detected and no
         // encounter is active. Try the lookup table first; fall back to AI.
         if (!activeEncounter && (combatActionHint === "attack" || turnResult.intent === "attack")) {
+          // 1. Check player message for an enemy keyword
           let enemy = lookupEnemy(msg);
+          // 2. Check recent DM narration (player often just says "I attack!" while
+          //    the DM already described the enemy)
+          if (!enemy) {
+            const recentDm = messages.filter(m => m.role === "dm").slice(-3).map(m => m.text).join(" ");
+            enemy = lookupEnemy(recentDm);
+          }
+          // 3. AI fallback for exotic/named enemies not in the table
           if (!enemy) {
             const dmContext = messages.filter(m => m.role === "dm").slice(-2).map(m => m.text).join("\n");
             enemy = await generateEnemyAI(msg, dmContext);

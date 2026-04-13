@@ -33,6 +33,10 @@ STRICT RULES:
 Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${character.class || ""}${character.background ? `, Background: ${character.background}` : ""}`.trim();
 }
 
+function buildEncounterPrompt() {
+  return `You generate D&D 5e enemy combat stats. Respond with ONLY a valid JSON object — no explanation, no markdown, no extra text.`;
+}
+
 // ── Handler ────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
@@ -61,9 +65,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  const systemPrompt = mode === "narration"
-    ? buildNarrationPrompt(character)
-    : buildDMPrompt(character);
+  const systemPrompt = mode === "narration" ? buildNarrationPrompt(character)
+    : mode === "encounter"                  ? buildEncounterPrompt()
+    :                                         buildDMPrompt(character);
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
