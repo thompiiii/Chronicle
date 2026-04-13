@@ -956,6 +956,7 @@ export default function App() {
           if (enemy) {
             activeEncounter = startEncounter(enemy, character?.stats);
             setEncounterState(activeEncounter);
+            setActiveTab("combat");
             setMessages(prev => [...prev, makeMsg("roll", `⚔️ ${enemy.name} appears! (${enemy.tierLabel ?? "?"}) — Combat begins`)]);
           }
         }
