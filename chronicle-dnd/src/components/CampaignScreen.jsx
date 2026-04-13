@@ -1,22 +1,14 @@
 import { useState } from "react";
 import { resolveStep, createCampaignState, goToStep, useItem, unequipWeapon } from "../game/campaignEngine";
 
-// ── Item type styles ──────────────────────────────────────────────────────────
-
-const ITEM_TYPE_STYLES = {
-  Weapon:     { badge: "bg-red-950 border-red-800 text-red-400",      icon: "⚔️" },
-  Consumable: { badge: "bg-green-950 border-green-800 text-green-400", icon: "🧪" },
-  Misc:       { badge: "bg-zinc-800 border-zinc-700 text-zinc-400",    icon: "📦" },
-};
-
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function HpBar({ current, max, color = "bg-green-500" }) {
+function HpBar({ current, max }) {
   const pct = Math.max(0, Math.min(100, (current / max) * 100));
-  const barColor = pct <= 25 ? "bg-red-500" : pct <= 50 ? "bg-amber-500" : color;
+  const cls = pct <= 25 ? "red" : pct <= 50 ? "amber" : "";
   return (
-    <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-      <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+    <div className="c-hp-track" style={{ height: 4 }}>
+      <div className={`c-hp-fill${cls ? " " + cls : ""}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -26,13 +18,13 @@ function EnemyPanel({ enemy, step }) {
   const hp    = enemy?.hp   ?? 0;
   const maxHp = enemy?.maxHp ?? step.enemy?.hp ?? 1;
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-widest text-zinc-500">Enemy</span>
-        <span className="text-xs font-mono text-red-400">{hp} / {maxHp} HP</span>
+    <div style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, padding: "0.65rem 0.85rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-muted)" }}>Enemy</span>
+        <span style={{ fontSize: "0.65rem", fontFamily: "monospace", color: "var(--c-red-bright)" }}>{hp} / {maxHp} HP</span>
       </div>
-      <p className="font-bold text-white text-sm">{name}</p>
-      <HpBar current={hp} max={maxHp} color="bg-red-500" />
+      <p style={{ margin: 0, fontWeight: 700, color: "var(--c-text)", fontSize: "0.9rem" }}>{name}</p>
+      <HpBar current={hp} max={maxHp} />
     </div>
   );
 }
@@ -41,39 +33,37 @@ function DiceDisplay({ lastRoll }) {
   if (!lastRoll) return null;
   const isDefend = lastRoll.action === "defend";
 
-  const playerColor = isDefend
-    ? "text-blue-300"
-    : lastRoll.isCrit    ? "text-yellow-300"
-    : lastRoll.isFumble  ? "text-red-400"
-    : lastRoll.playerHit ? "text-green-400"
-    :                      "text-zinc-500";
+  const playerColor = isDefend ? "#6a88d8"
+    : lastRoll.isCrit    ? "var(--c-accent)"
+    : lastRoll.isFumble  ? "var(--c-red-bright)"
+    : lastRoll.playerHit ? "#4ab060"
+    :                      "var(--c-text-muted)";
 
-  const playerLabel = isDefend
-    ? "STANCE"
+  const playerLabel = isDefend ? "STANCE"
     : lastRoll.isCrit    ? "CRIT"
     : lastRoll.isFumble  ? "FUMBLE"
     : lastRoll.playerHit ? "HIT"
     :                      "MISS";
 
-  const enemyColor = lastRoll.enemyResult === "miss"  ? "text-zinc-500"
-                   : lastRoll.enemyResult === "heavy" ? "text-orange-400"
-                   :                                    "text-red-400";
+  const enemyColor = lastRoll.enemyResult === "miss"  ? "var(--c-text-muted)"
+                   : lastRoll.enemyResult === "heavy" ? "#c8883a"
+                   :                                    "var(--c-red-bright)";
 
   const enemyLabel = lastRoll.enemyResult === "miss"  ? "MISS"
                    : lastRoll.enemyResult === "heavy" ? "HEAVY"
                    :                                    "HIT";
 
   return (
-    <div className="flex gap-3">
-      <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center py-4 gap-1">
-        <span className="text-xs uppercase tracking-widest text-zinc-500">{isDefend ? "🛡️ You" : "⚔️ You"}</span>
-        <span className={`text-5xl font-black leading-none ${playerColor}`}>{isDefend ? "—" : lastRoll.playerRoll}</span>
-        <span className={`text-xs font-bold tracking-widest ${playerColor}`}>{playerLabel}</span>
+    <div style={{ display: "flex", gap: "0.5rem" }}>
+      <div style={{ flex: 1, background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0.85rem 0.5rem", gap: "0.2rem" }}>
+        <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-muted)" }}>{isDefend ? "🛡️ You" : "⚔️ You"}</span>
+        <span style={{ fontSize: "3rem", fontWeight: 900, lineHeight: 1, color: playerColor }}>{isDefend ? "—" : lastRoll.playerRoll}</span>
+        <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.1em", color: playerColor }}>{playerLabel}</span>
       </div>
-      <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-2xl flex flex-col items-center justify-center py-4 gap-1">
-        <span className="text-xs uppercase tracking-widest text-zinc-500">👺 Enemy</span>
-        <span className={`text-5xl font-black leading-none ${enemyColor}`}>{lastRoll.enemyRoll || "—"}</span>
-        <span className={`text-xs font-bold tracking-widest ${enemyColor}`}>{lastRoll.enemyRoll ? enemyLabel : "MISS"}</span>
+      <div style={{ flex: 1, background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0.85rem 0.5rem", gap: "0.2rem" }}>
+        <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-muted)" }}>👺 Enemy</span>
+        <span style={{ fontSize: "3rem", fontWeight: 900, lineHeight: 1, color: enemyColor }}>{lastRoll.enemyRoll || "—"}</span>
+        <span style={{ fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.1em", color: enemyColor }}>{lastRoll.enemyRoll ? enemyLabel : "MISS"}</span>
       </div>
     </div>
   );
@@ -83,9 +73,9 @@ function CombatLog({ lines }) {
   if (!lines || lines.length === 0) return null;
   const recent = lines.slice(-5);
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 flex flex-col gap-1">
+    <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 6, padding: "0.6rem 0.85rem", display: "flex", flexDirection: "column", gap: "0.2rem" }}>
       {recent.map((line, i) => (
-        <p key={i} className={`text-xs font-mono transition-all duration-200 ${i === recent.length - 1 ? "text-zinc-300" : "text-zinc-600"}`}>
+        <p key={i} style={{ margin: 0, fontSize: "0.65rem", fontFamily: "monospace", color: i === recent.length - 1 ? "var(--c-text-dim)" : "var(--c-text-muted)" }}>
           {line}
         </p>
       ))}
@@ -95,14 +85,14 @@ function CombatLog({ lines }) {
 
 function PlayerPanel({ player }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-4 py-3 flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-widest text-zinc-500">You</span>
-        <div className="flex items-center gap-2">
+    <div style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, padding: "0.65rem 0.85rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-muted)" }}>You</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           {player.equippedWeapon && (
-            <span className="text-[10px] text-red-400 font-mono">⚔️ {player.attack} atk</span>
+            <span style={{ fontSize: "0.6rem", fontFamily: "monospace", color: "var(--c-red-bright)" }}>⚔️ {player.attack} atk</span>
           )}
-          <span className={`text-xs font-mono ${player.hp <= 5 ? "text-red-400" : "text-green-400"}`}>
+          <span style={{ fontSize: "0.65rem", fontFamily: "monospace", color: player.hp <= 5 ? "var(--c-red-bright)" : "#4ab060" }}>
             {player.hp} / {player.maxHp ?? 20} HP
           </span>
         </div>
@@ -113,23 +103,22 @@ function PlayerPanel({ player }) {
 }
 
 function ActionBar({ onAttack, onDefend, onHeavy, loading }) {
-  const btn = "flex-1 flex flex-col items-center justify-center gap-1 py-3 rounded-2xl font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 active:scale-95";
   return (
-    <div className="flex gap-2">
-      <button onClick={onAttack} disabled={loading} className={`${btn} bg-red-900 hover:bg-red-800 text-white`}>
-        <span className="text-xl">⚔️</span>
-        <span className="text-xs tracking-wide">Attack</span>
-        <span className="text-[10px] text-red-300/70">Standard</span>
+    <div style={{ display: "flex", gap: "0.4rem" }}>
+      <button onClick={onAttack} disabled={loading} className="c-encounter-btn c-encounter-btn-attack">
+        <span style={{ fontSize: "1.1rem" }}>⚔️</span>
+        <span>Attack</span>
+        <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>Standard</span>
       </button>
-      <button onClick={onHeavy} disabled={loading} className={`${btn} bg-orange-900 hover:bg-orange-800 text-white`}>
-        <span className="text-xl">💥</span>
-        <span className="text-xs tracking-wide">Heavy</span>
-        <span className="text-[10px] text-orange-300/70">−3 to hit, ×2 dmg</span>
+      <button onClick={onHeavy} disabled={loading} className="c-encounter-btn c-encounter-btn-heavy">
+        <span style={{ fontSize: "1.1rem" }}>💥</span>
+        <span>Heavy</span>
+        <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>−3 hit, ×2 dmg</span>
       </button>
-      <button onClick={onDefend} disabled={loading} className={`${btn} bg-blue-900 hover:bg-blue-800 text-white`}>
-        <span className="text-xl">🛡️</span>
-        <span className="text-xs tracking-wide">Defend</span>
-        <span className="text-[10px] text-blue-300/70">Halve incoming</span>
+      <button onClick={onDefend} disabled={loading} className="c-encounter-btn c-encounter-btn-defend">
+        <span style={{ fontSize: "1.1rem" }}>🛡️</span>
+        <span>Defend</span>
+        <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>Halve incoming</span>
       </button>
     </div>
   );
@@ -138,63 +127,55 @@ function ActionBar({ onAttack, onDefend, onHeavy, loading }) {
 function NarrationBox({ text }) {
   if (!text) return null;
   return (
-    <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3">
-      <p className="text-zinc-300 text-sm leading-relaxed font-serif line-clamp-3">{text}</p>
+    <div className="c-narration" style={{ fontSize: "0.95rem", lineHeight: 1.7 }}>
+      {text}
     </div>
   );
 }
 
 function InventoryItemRow({ item, player, isCombat, onUseItem, onUnequip }) {
-  const styles  = ITEM_TYPE_STYLES[item.type] ?? ITEM_TYPE_STYLES.Misc;
   const isEquipped = player.equippedWeapon === item.name;
+  const typeColor = item.type === "Weapon" ? "var(--c-red-bright)" : item.type === "Consumable" ? "#4ab060" : "var(--c-text-muted)";
 
   return (
-    <div className={`flex items-start justify-between gap-2 rounded-xl px-3 py-2.5 border ${
-      isEquipped ? "bg-red-950/20 border-red-900" : "bg-black border-zinc-800"
-    }`}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-white text-xs font-semibold">{item.name}</span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-mono ${styles.badge}`}>
-            {styles.icon} {item.type}
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem", borderRadius: 4, padding: "0.5rem 0.65rem", background: isEquipped ? "rgba(200,169,110,0.05)" : "var(--c-bg)", border: `1px solid ${isEquipped ? "var(--c-accent-dim)" : "var(--c-border)"}` }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+          <span style={{ color: "var(--c-text)", fontSize: "0.82rem", fontWeight: 600 }}>{item.name}</span>
+          <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem", borderRadius: 10, border: `1px solid ${typeColor}`, color: typeColor, opacity: 0.8 }}>
+            {item.type === "Weapon" ? "⚔️" : item.type === "Consumable" ? "🧪" : "📦"} {item.type}
           </span>
           {isEquipped && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-950 border border-amber-800 text-amber-400 font-mono">
+            <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem", borderRadius: 10, background: "rgba(200,169,110,0.1)", border: "1px solid var(--c-accent-dim)", color: "var(--c-accent)" }}>
               Equipped
             </span>
           )}
         </div>
-        <p className="text-zinc-500 text-[11px] mt-0.5 leading-snug">{item.desc}</p>
+        <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.68rem", marginTop: "0.15rem" }}>{item.desc}</p>
       </div>
 
       {item.type === "Consumable" && item.effect && (
-        <button
-          onClick={() => onUseItem(item.name)}
-          className="flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-green-900 hover:bg-green-800 border border-green-700 text-green-300 font-semibold transition-colors cursor-pointer"
-        >
+        <button onClick={() => onUseItem(item.name)}
+          style={{ flexShrink: 0, fontSize: "0.65rem", padding: "0.25rem 0.6rem", borderRadius: 4, background: "rgba(40,100,50,0.35)", border: "1px solid rgba(40,100,50,0.6)", color: "#4ab060", fontWeight: 600, cursor: "pointer" }}>
           Use
         </button>
       )}
       {item.type === "Weapon" && item.effect && (
         isEquipped ? (
           isCombat ? (
-            <span className="flex-shrink-0 text-[10px] text-zinc-600 italic self-center whitespace-nowrap">out of combat</span>
+            <span style={{ flexShrink: 0, fontSize: "0.6rem", color: "var(--c-text-muted)", fontStyle: "italic", alignSelf: "center", whiteSpace: "nowrap" }}>out of combat</span>
           ) : (
-            <button
-              onClick={onUnequip}
-              className="flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 font-semibold transition-colors cursor-pointer"
-            >
+            <button onClick={onUnequip}
+              style={{ flexShrink: 0, fontSize: "0.65rem", padding: "0.25rem 0.6rem", borderRadius: 4, background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-text-dim)", fontWeight: 600, cursor: "pointer" }}>
               Unequip
             </button>
           )
         ) : (
           isCombat ? (
-            <span className="flex-shrink-0 text-[10px] text-zinc-600 italic self-center whitespace-nowrap">out of combat</span>
+            <span style={{ flexShrink: 0, fontSize: "0.6rem", color: "var(--c-text-muted)", fontStyle: "italic", alignSelf: "center", whiteSpace: "nowrap" }}>out of combat</span>
           ) : (
-            <button
-              onClick={() => onUseItem(item.name)}
-              className="flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-red-900 hover:bg-red-800 border border-red-700 text-red-300 font-semibold transition-colors cursor-pointer"
-            >
+            <button onClick={() => onUseItem(item.name)}
+              style={{ flexShrink: 0, fontSize: "0.65rem", padding: "0.25rem 0.6rem", borderRadius: 4, background: "rgba(155,48,48,0.35)", border: "1px solid rgba(155,48,48,0.6)", color: "#e87070", fontWeight: 600, cursor: "pointer" }}>
               Equip
             </button>
           )
@@ -212,31 +193,29 @@ function InventoryPanel({ player, onUseItem, isCombat, onUnequip }) {
   const misc       = items.filter(i => i.type === "Misc");
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-      <button
-        onClick={() => setIsOpen(o => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-zinc-800/50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-base">🎒</span>
-          <span className="text-xs uppercase tracking-widest text-zinc-400 font-semibold">Inventory</span>
-          <span className="text-xs text-zinc-600 font-mono">({items.length})</span>
+    <div style={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 6, overflow: "hidden" }}>
+      <button onClick={() => setIsOpen(o => !o)}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 0.85rem", cursor: "pointer", background: "none", border: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span>🎒</span>
+          <span style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--c-text-dim)", fontFamily: "'Cinzel', serif" }}>Inventory</span>
+          <span style={{ fontSize: "0.65rem", fontFamily: "monospace", color: "var(--c-text-muted)" }}>({items.length})</span>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-amber-400 text-xs font-mono">🪙 {player.gold ?? 0}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <span style={{ color: "var(--c-accent)", fontSize: "0.8rem", fontFamily: "monospace" }}>🪙 {player.gold ?? 0}</span>
           {player.equippedWeapon && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-950 border border-red-800 text-red-400 font-mono">
+            <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem", borderRadius: 10, background: "rgba(155,48,48,0.15)", border: "1px solid rgba(155,48,48,0.4)", color: "#e87070" }}>
               ⚔️ {player.equippedWeapon}
             </span>
           )}
-          <span className="text-zinc-600 text-xs">{isOpen ? "▲" : "▼"}</span>
+          <span style={{ color: "var(--c-text-muted)", fontSize: "0.65rem" }}>{isOpen ? "▲" : "▼"}</span>
         </div>
       </button>
 
       {isOpen && (
-        <div className="border-t border-zinc-800 px-4 py-3 flex flex-col gap-3">
+        <div style={{ borderTop: "1px solid var(--c-border)", padding: "0.65rem 0.85rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {items.length === 0 && (
-            <p className="text-zinc-600 text-sm text-center py-2">Your pack is empty.</p>
+            <p style={{ color: "var(--c-text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "0.25rem 0", margin: 0 }}>Your pack is empty.</p>
           )}
           {[
             { label: "Weapons",     list: weapons },
@@ -244,8 +223,8 @@ function InventoryPanel({ player, onUseItem, isCombat, onUnequip }) {
             { label: "Misc",        list: misc },
           ].map(({ label, list }) => list.length > 0 && (
             <div key={label}>
-              <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">{label}</p>
-              <div className="flex flex-col gap-2">
+              <p style={{ margin: "0 0 0.4rem", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--c-text-muted)" }}>{label}</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
                 {list.map(item => (
                   <InventoryItemRow
                     key={item.name}
@@ -270,71 +249,61 @@ function BattleRecap({ transition, onContinue, onRetry, onBack }) {
   const isVictory = outcome === "victory";
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className={`rounded-2xl px-5 py-4 text-center border ${
-        isVictory ? "bg-green-950/40 border-green-800" : "bg-red-950/40 border-red-900"
-      }`}>
-        <p className="text-2xl mb-1">{isVictory ? "⚔️" : "💀"}</p>
-        <p className={`text-lg font-black tracking-widest uppercase ${isVictory ? "text-green-300" : "text-red-400"}`}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      <div style={{ borderRadius: 6, padding: "1rem 1.25rem", textAlign: "center", border: `1px solid ${isVictory ? "rgba(40,100,50,0.5)" : "rgba(155,48,48,0.5)"}`, background: isVictory ? "rgba(40,100,50,0.12)" : "rgba(155,48,48,0.12)" }}>
+        <p style={{ fontSize: "1.5rem", margin: "0 0 0.25rem" }}>{isVictory ? "⚔️" : "💀"}</p>
+        <p style={{ margin: 0, fontFamily: "'Cinzel', serif", fontSize: "0.85rem", fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: isVictory ? "#4ab060" : "var(--c-red-bright)" }}>
           {isVictory ? "Victory" : "Defeated"}
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col items-center py-3 gap-0.5">
-          <span className="text-xl font-black text-red-400">{battleStats.dealt}</span>
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Dealt</span>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.4rem" }}>
+        <div style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 5, display: "flex", flexDirection: "column", alignItems: "center", padding: "0.65rem 0.4rem", gap: "0.15rem" }}>
+          <span style={{ fontFamily: "'Cinzel', serif", fontSize: "1.3rem", color: "var(--c-red-bright)" }}>{battleStats.dealt}</span>
+          <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--c-text-muted)" }}>Dealt</span>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col items-center py-3 gap-0.5">
-          <span className="text-xl font-black text-amber-400">{battleStats.taken}</span>
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Taken</span>
+        <div style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 5, display: "flex", flexDirection: "column", alignItems: "center", padding: "0.65rem 0.4rem", gap: "0.15rem" }}>
+          <span style={{ fontFamily: "'Cinzel', serif", fontSize: "1.3rem", color: "var(--c-accent)" }}>{battleStats.taken}</span>
+          <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--c-text-muted)" }}>Taken</span>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl flex flex-col items-center py-3 gap-0.5">
-          <span className="text-xl font-black text-zinc-300">{battleStats.rounds}</span>
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Rounds</span>
+        <div style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 5, display: "flex", flexDirection: "column", alignItems: "center", padding: "0.65rem 0.4rem", gap: "0.15rem" }}>
+          <span style={{ fontFamily: "'Cinzel', serif", fontSize: "1.3rem", color: "var(--c-text)" }}>{battleStats.rounds}</span>
+          <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--c-text-muted)" }}>Rounds</span>
         </div>
       </div>
 
       {(battleStats.crits > 0 || battleStats.fumbles > 0) && (
-        <div className="flex gap-2">
+        <div style={{ display: "flex", gap: "0.4rem" }}>
           {battleStats.crits > 0 && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-yellow-950 border border-yellow-800 text-yellow-300 font-mono">
+            <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: 10, background: "rgba(200,169,110,0.1)", border: "1px solid var(--c-accent-dim)", color: "var(--c-accent)", fontFamily: "monospace" }}>
               ⚡ {battleStats.crits} crit{battleStats.crits > 1 ? "s" : ""}
             </span>
           )}
           {battleStats.fumbles > 0 && (
-            <span className="text-xs px-3 py-1.5 rounded-full bg-red-950 border border-red-900 text-red-400 font-mono">
+            <span style={{ fontSize: "0.7rem", padding: "0.25rem 0.65rem", borderRadius: 10, background: "rgba(155,48,48,0.15)", border: "1px solid rgba(155,48,48,0.4)", color: "var(--c-red-bright)", fontFamily: "monospace" }}>
               💀 {battleStats.fumbles} fumble{battleStats.fumbles > 1 ? "s" : ""}
             </span>
           )}
         </div>
       )}
 
-      <div className="bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 flex flex-col gap-1 max-h-40 overflow-y-auto">
-        <p className="text-[10px] uppercase tracking-widest text-zinc-600 mb-1">Battle Log</p>
+      <div style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 5, padding: "0.6rem 0.85rem", display: "flex", flexDirection: "column", gap: "0.2rem", maxHeight: "10rem", overflowY: "auto" }}>
+        <p style={{ margin: "0 0 0.2rem", fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-muted)" }}>Battle Log</p>
         {battleLog.map((line, i) => (
-          <p key={i} className="text-xs font-mono text-zinc-400">{line}</p>
+          <p key={i} style={{ margin: 0, fontSize: "0.65rem", fontFamily: "monospace", color: "var(--c-text-dim)" }}>{line}</p>
         ))}
       </div>
 
       {narration && (
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3">
-          <p className="text-zinc-300 text-sm leading-relaxed font-serif">{narration}</p>
-        </div>
+        <div className="c-narration" style={{ fontSize: "0.95rem" }}>{narration}</div>
       )}
 
       {isVictory ? (
-        <button onClick={onContinue} className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition-colors cursor-pointer">
-          Continue →
-        </button>
+        <button onClick={onContinue} className="c-btn-primary">Continue →</button>
       ) : (
-        <div className="flex flex-col gap-2">
-          <button onClick={onRetry} className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl transition-colors cursor-pointer">
-            Try Again
-          </button>
-          <button onClick={onBack} className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold rounded-xl transition-colors cursor-pointer">
-            ← Back to Menu
-          </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+          <button onClick={onRetry} className="c-btn-primary">Try Again</button>
+          <button onClick={onBack} className="c-btn-ghost">← Back to Menu</button>
         </div>
       )}
     </div>
@@ -375,16 +344,14 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
   const isCombat = step.type === "combat";
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col px-4 py-5 gap-3">
+    <div className="chronicle-app c-campaign">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <button onClick={onBack} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">
-          🔥
-        </button>
-        <div className="text-right">
-          <p className="text-zinc-500 text-xs uppercase tracking-widest">{step.type}</p>
-          <h2 className="text-base font-serif font-bold">{step.title}</h2>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.25rem" }}>
+        <button onClick={onBack} className="c-back-btn">←</button>
+        <div style={{ textAlign: "right" }}>
+          <p style={{ margin: 0, fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--c-text-muted)" }}>{step.type}</p>
+          <h2 style={{ margin: 0, fontFamily: "'Cinzel', serif", fontSize: "0.95rem", color: "var(--c-text)" }}>{step.title}</h2>
         </div>
       </div>
 
@@ -412,7 +379,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
             loading={loading}
           />
           {loading && (
-            <p className="text-center text-zinc-600 text-xs animate-pulse">Resolving turn…</p>
+            <p style={{ textAlign: "center", color: "var(--c-text-muted)", fontSize: "0.75rem", margin: 0 }}>Resolving turn…</p>
           )}
 
           <InventoryPanel player={gameState.player} onUseItem={handleUseItem} isCombat={true} onUnequip={handleUnequip} />
@@ -425,70 +392,59 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
       {!isCombat && !gameState.pendingTransition && (
         <>
           {/* Narrative text */}
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 text-zinc-200 leading-relaxed font-serif">
+          <div className="c-narration">
             {(gameState.narration ?? step.text).split("\n\n").map((p, i) => (
-              <p key={i} className="mb-2 last:mb-0">{p}</p>
+              <p key={i} style={{ margin: "0 0 0.5rem" }}>{p}</p>
             ))}
           </div>
 
           {/* Loot cards */}
           {step.type === "loot" && step.loot && (
-            <div className="flex flex-col gap-2">
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {step.loot.gold > 0 && (
-                <div className="flex items-center gap-3 bg-yellow-950/30 border border-yellow-900/60 rounded-2xl px-4 py-3">
-                  <span className="text-2xl">🪙</span>
+                <div className="c-loot-gold-card">
+                  <span style={{ fontSize: "1.4rem" }}>🪙</span>
                   <div>
-                    <p className="text-yellow-300 font-bold text-sm">+{step.loot.gold} Gold</p>
-                    <p className="text-yellow-700 text-xs">Added to your purse</p>
+                    <p style={{ margin: 0, color: "var(--c-accent)", fontWeight: 700, fontSize: "0.9rem" }}>+{step.loot.gold} Gold</p>
+                    <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.7rem" }}>Added to your purse</p>
                   </div>
                 </div>
               )}
-              {(step.loot.items ?? []).map((item, i) => {
-                const styles = ITEM_TYPE_STYLES[item.type] ?? ITEM_TYPE_STYLES.Misc;
-                return (
-                  <div key={i} className="flex items-start gap-3 bg-zinc-900 border border-zinc-700 rounded-2xl px-4 py-3">
-                    <span className="text-2xl mt-0.5">{styles.icon}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-white font-bold text-sm">{item.name}</p>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-mono ${styles.badge}`}>
-                          {item.type}
-                        </span>
-                      </div>
-                      <p className="text-zinc-400 text-xs mt-0.5">{item.desc}</p>
+              {(step.loot.items ?? []).map((item, i) => (
+                <div key={i} className="c-loot-item-card">
+                  <span style={{ fontSize: "1.4rem" }}>{item.type === "Weapon" ? "⚔️" : item.type === "Consumable" ? "🧪" : "📦"}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                      <p style={{ margin: 0, color: "var(--c-text)", fontWeight: 700, fontSize: "0.9rem" }}>{item.name}</p>
+                      <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem", borderRadius: 10, border: "1px solid var(--c-border)", color: "var(--c-text-muted)" }}>{item.type}</span>
                     </div>
+                    <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.75rem", marginTop: "0.15rem" }}>{item.desc}</p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
 
           {/* Loot continue */}
           {step.type === "loot" && (
-            <button
-              onClick={() => handleChoice(step.next)}
-              className="w-full py-3 bg-zinc-900 border border-zinc-700 hover:border-amber-500 hover:bg-zinc-800 text-zinc-200 font-semibold rounded-xl transition-colors cursor-pointer"
-            >
+            <button onClick={() => handleChoice(step.next)} className="c-continue-btn">
               Continue →
             </button>
           )}
 
           {/* Choice buttons */}
           {step.type === "choice" && step.choices.map(choice => (
-            <button
-              key={choice.next}
-              onClick={() => handleChoice(choice.next)}
-              className="w-full text-left px-4 py-3 bg-zinc-900 border border-zinc-800 hover:border-amber-500 hover:bg-zinc-800 rounded-xl text-zinc-200 transition-colors cursor-pointer"
-            >
-              {choice.text}
+            <button key={choice.next} onClick={() => handleChoice(choice.next)} className="c-choice-btn">
+              <span>{choice.text}</span>
+              <span style={{ color: "var(--c-border-bright)", fontSize: "1rem" }}>›</span>
             </button>
           ))}
 
           {/* Exploration input */}
           {step.type === "exploration" && !gameState.gameOver && (
-            <div className="flex gap-2">
+            <div style={{ display: "flex", gap: "0.4rem" }}>
               <input
-                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500"
+                style={{ flex: 1, background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 4, padding: "0.65rem 0.85rem", color: "var(--c-text)", fontFamily: "'Crimson Pro', serif", fontSize: "1rem", outline: "none" }}
                 placeholder="What do you do?"
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -498,7 +454,8 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
               <button
                 onClick={() => handleAction()}
                 disabled={loading || !input.trim()}
-                className="px-4 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black font-bold rounded-xl transition-colors cursor-pointer"
+                className="c-btn-primary"
+                style={{ width: "auto", padding: "0 1.25rem", fontSize: "1rem" }}
               >
                 {loading ? "…" : "▶"}
               </button>
@@ -512,20 +469,14 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
 
           {/* End state */}
           {gameState.gameOver && (
-            <div className="flex flex-col gap-3 mt-4">
-              <p className="text-center text-zinc-500 text-sm">
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
+              <p style={{ textAlign: "center", color: "var(--c-text-muted)", fontSize: "0.9rem", margin: 0 }}>
                 {step.outcome === "victory" ? "🏆 Campaign complete" : "💀 Defeated"}
               </p>
-              <button
-                onClick={() => setGameState(createCampaignState(gameState.campaign))}
-                className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-black font-bold rounded-xl cursor-pointer transition-colors"
-              >
+              <button onClick={() => setGameState(createCampaignState(gameState.campaign))} className="c-btn-primary">
                 Try Again
               </button>
-              <button
-                onClick={onBack}
-                className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-semibold rounded-xl cursor-pointer transition-colors"
-              >
+              <button onClick={onBack} className="c-btn-ghost">
                 ← Back to Menu
               </button>
             </div>

@@ -282,9 +282,9 @@ function renderMarkdown(text) {
     <p key={i} className="mb-2 last:mb-0">
       {para.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/).map((chunk, j) => {
         if (chunk.startsWith("**") && chunk.endsWith("**"))
-          return <strong key={j} className="text-white font-semibold">{chunk.slice(2, -2)}</strong>;
+          return <strong key={j} style={{ color: "var(--c-text)", fontWeight: 600 }}>{chunk.slice(2, -2)}</strong>;
         if (chunk.startsWith("*") && chunk.endsWith("*"))
-          return <em key={j} className="text-gray-200 italic">{chunk.slice(1, -1)}</em>;
+          return <em key={j} style={{ color: "var(--c-text-dim)", fontStyle: "italic" }}>{chunk.slice(1, -1)}</em>;
         return chunk;
       })}
     </p>
@@ -310,38 +310,35 @@ function DiceRoller({ onRollToChat }) {
     if (onRollToChat) onRollToChat(result);
   }
 
-  const resultColor = lastRoll?.isCrit ? "text-yellow-400" : lastRoll?.isFumble ? "text-red-400" : "text-white";
-
   return (
-    <div className="bg-zinc-900 border-b border-zinc-800 px-4 py-3 flex-shrink-0">
-      <div className="flex items-center gap-4 mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-zinc-500 text-xs">Dice</span>
-          <button onClick={() => setCount(Math.max(1, count - 1))} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-sm cursor-pointer flex items-center justify-center">−</button>
-          <span className="text-white font-bold w-4 text-center">{count}</span>
-          <button onClick={() => setCount(Math.min(10, count + 1))} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-sm cursor-pointer flex items-center justify-center">+</button>
+    <div className="c-panel">
+      <div className="c-dice-controls">
+        <div className="c-counter-group">
+          <span className="c-counter-lbl">Dice</span>
+          <button onClick={() => setCount(Math.max(1, count - 1))} className="c-counter-btn">−</button>
+          <span className="c-counter-val">{count}</span>
+          <button onClick={() => setCount(Math.min(10, count + 1))} className="c-counter-btn">+</button>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-zinc-500 text-xs">Mod</span>
-          <button onClick={() => setRollMod(m => m - 1)} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-sm cursor-pointer flex items-center justify-center">−</button>
-          <span className="text-white font-bold w-6 text-center">{fmtSign(rollMod)}</span>
-          <button onClick={() => setRollMod(m => m + 1)} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-sm cursor-pointer flex items-center justify-center">+</button>
+        <div className="c-counter-group">
+          <span className="c-counter-lbl">Mod</span>
+          <button onClick={() => setRollMod(m => m - 1)} className="c-counter-btn">−</button>
+          <span className="c-counter-val">{fmtSign(rollMod)}</span>
+          <button onClick={() => setRollMod(m => m + 1)} className="c-counter-btn">+</button>
         </div>
         {lastRoll && (
-          <div className="ml-auto text-right">
-            <span className={`text-2xl font-bold ${resultColor}`}>{lastRoll.total}</span>
-            {lastRoll.isCrit && <span className="ml-1 text-xs text-amber-400">CRIT!</span>}
-            {lastRoll.isFumble && <span className="ml-1 text-xs text-red-400">FUMBLE</span>}
-            {lastRoll.count > 1 && <p className="text-zinc-500 text-xs">[{lastRoll.rolls.join(", ")}]{lastRoll.modifier !== 0 ? ` ${fmtSign(lastRoll.modifier)}` : ""}</p>}
+          <div className="c-dice-result">
+            <div className={`c-dice-result-val${lastRoll.isCrit ? " crit" : lastRoll.isFumble ? " fumble" : ""}`}>{lastRoll.total}</div>
+            {lastRoll.isCrit   && <span className="c-dice-result-lbl" style={{ color: "var(--c-accent)" }}>CRIT!</span>}
+            {lastRoll.isFumble && <span className="c-dice-result-lbl" style={{ color: "var(--c-red-bright)" }}>FUMBLE</span>}
+            {lastRoll.count > 1 && <div className="c-dice-result-lbl">[{lastRoll.rolls.join(", ")}]{lastRoll.modifier !== 0 ? ` ${fmtSign(lastRoll.modifier)}` : ""}</div>}
           </div>
         )}
-        {rolling && <div className="ml-auto text-2xl animate-spin">🎲</div>}
+        {rolling && <div style={{ marginLeft: "auto", fontSize: "1.5rem" }}>🎲</div>}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="c-dice-grid">
         {DICE.map(d => (
-          <button key={d.sides} onClick={() => roll(d.sides)}
-            className={`${d.color} text-white rounded py-2 text-xs font-bold cursor-pointer transition-colors flex flex-col items-center gap-0.5`}>
-            <span className="text-base leading-none">{d.dot}</span>
+          <button key={d.sides} onClick={() => roll(d.sides)} className="c-die-btn">
+            <span style={{ fontSize: "1rem", lineHeight: 1 }}>{d.dot}</span>
             <span>{d.label}</span>
           </button>
         ))}
@@ -371,49 +368,44 @@ function LiveCombatView({ encounter, character, currentHp }) {
       ];
 
   return (
-    <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "300px" }}>
-      <div className="px-4 py-3 flex flex-col gap-2">
-
+    <div className="c-panel" style={{ maxHeight: "300px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-white text-sm font-semibold">⚔️ Combat</span>
-            <span className="text-zinc-400 text-xs">Round {battleStats.rounds + 1}</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono border ${
-              playerFirst
-                ? "bg-green-950 border-green-800 text-green-400"
-                : "bg-red-950 border-red-900 text-red-400"
-            }`}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <span style={{ color: "var(--c-text)", fontSize: "0.85rem", fontWeight: 600 }}>⚔️ Combat</span>
+            <span style={{ color: "var(--c-text-muted)", fontSize: "0.7rem" }}>Round {battleStats.rounds + 1}</span>
+            <span style={{ fontSize: "0.6rem", padding: "0.1rem 0.4rem", borderRadius: 10, fontFamily: "monospace", border: `1px solid ${playerFirst ? "rgba(40,100,50,0.5)" : "rgba(155,48,48,0.5)"}`, background: playerFirst ? "rgba(40,100,50,0.12)" : "rgba(155,48,48,0.12)", color: playerFirst ? "#4ab060" : "var(--c-red-bright)" }}>
               {playerFirst ? "You go first" : "Enemy goes first"}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-[11px] font-mono">
-            <span className="text-red-400">⚔ {battleStats.dealt}</span>
-            <span className="text-amber-400">🛡 {battleStats.taken}</span>
-            {battleStats.crits   > 0 && <span className="text-yellow-400">⚡{battleStats.crits}</span>}
-            {battleStats.fumbles > 0 && <span className="text-red-600">💀{battleStats.fumbles}</span>}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontFamily: "monospace", fontSize: "0.65rem" }}>
+            <span style={{ color: "var(--c-red-bright)" }}>⚔ {battleStats.dealt}</span>
+            <span style={{ color: "var(--c-accent)" }}>🛡 {battleStats.taken}</span>
+            {battleStats.crits   > 0 && <span style={{ color: "var(--c-accent)" }}>⚡{battleStats.crits}</span>}
+            {battleStats.fumbles > 0 && <span style={{ color: "var(--c-red-bright)" }}>💀{battleStats.fumbles}</span>}
           </div>
         </div>
 
         {/* Initiative order with HP bars */}
-        <div className="flex flex-col gap-1.5">
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
           {order.map((c, i) => {
             const pct = Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100));
-            const bar = pct <= 25 ? "bg-red-500" : pct <= 50 ? "bg-amber-500" : c.isPlayer ? "bg-green-500" : "bg-red-400";
+            const barColor = pct <= 25 ? "var(--c-red-bright)" : pct <= 50 ? "#c8883a" : c.isPlayer ? "#3a9a4a" : "#9b3a3a";
             return (
-              <div key={i} className={`rounded-lg px-3 py-2 border ${i === 0 ? "bg-amber-950/20 border-amber-900/50" : "bg-black border-zinc-800"}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5">
-                    {i === 0 && <span className="text-amber-400 text-[10px]">▶</span>}
-                    <span className={`text-xs font-semibold ${c.isPlayer ? "text-amber-300" : "text-white"}`}>
+              <div key={i} style={{ borderRadius: 5, padding: "0.5rem 0.65rem", border: `1px solid ${i === 0 ? "var(--c-accent-dim)" : "var(--c-border)"}`, background: i === 0 ? "rgba(200,169,110,0.06)" : "var(--c-bg)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
+                    {i === 0 && <span style={{ color: "var(--c-accent)", fontSize: "0.6rem" }}>▶</span>}
+                    <span style={{ fontSize: "0.75rem", fontWeight: 600, color: c.isPlayer ? "var(--c-accent)" : "var(--c-text)" }}>
                       {c.label}{c.isPlayer ? " (you)" : ""}
                     </span>
-                    <span className="text-zinc-600 text-[10px] font-mono">init {c.init}</span>
+                    <span style={{ color: "var(--c-text-muted)", fontSize: "0.6rem", fontFamily: "monospace" }}>init {c.init}</span>
                   </div>
-                  <span className={`text-[11px] font-mono ${pct <= 25 ? "text-red-400" : "text-zinc-400"}`}>{c.hp}/{c.maxHp} HP</span>
+                  <span style={{ fontSize: "0.65rem", fontFamily: "monospace", color: pct <= 25 ? "var(--c-red-bright)" : "var(--c-text-muted)" }}>{c.hp}/{c.maxHp} HP</span>
                 </div>
-                <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-500 ${bar}`} style={{ width: `${pct}%` }} />
+                <div style={{ width: "100%", height: 3, background: "var(--c-surface2)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 2, transition: "width 0.5s", background: barColor, width: `${pct}%` }} />
                 </div>
               </div>
             );
@@ -422,10 +414,10 @@ function LiveCombatView({ encounter, character, currentHp }) {
 
         {/* Full battle log */}
         {battleLog.length > 0 && (
-          <div ref={logRef} className="bg-black border border-zinc-800 rounded-lg px-3 py-2 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: "90px" }}>
-            <p className="text-[9px] uppercase tracking-widest text-zinc-700 mb-0.5">Battle Log</p>
+          <div ref={logRef} style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 5, padding: "0.5rem 0.65rem", display: "flex", flexDirection: "column", gap: "0.15rem", overflowY: "auto", maxHeight: "90px" }}>
+            <p style={{ margin: 0, fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-muted)", marginBottom: "0.2rem" }}>Battle Log</p>
             {battleLog.map((line, i) => (
-              <p key={i} className={`text-[11px] font-mono ${i >= battleLog.length - 4 ? "text-zinc-400" : "text-zinc-600"}`}>{line}</p>
+              <p key={i} style={{ margin: 0, fontSize: "0.65rem", fontFamily: "monospace", color: i >= battleLog.length - 4 ? "var(--c-text-dim)" : "var(--c-text-muted)" }}>{line}</p>
             ))}
           </div>
         )}
@@ -481,54 +473,52 @@ function CombatTracker({ character, currentHp, encounterState }) {
   }
 
   return (
-    <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "260px", overflowY: "auto" }}>
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-white text-sm font-semibold">⚔️ Initiative</span>
-            {started && <span className="text-zinc-400 text-xs">Round {round}</span>}
-          </div>
-          <div className="flex gap-1">
-            {!started
-              ? <button onClick={() => setStarted(true)} disabled={combatants.length < 2}
-                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-black rounded text-xs cursor-pointer font-bold">Start</button>
-              : <button onClick={nextTurn}
-                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded text-xs cursor-pointer font-bold">Next →</button>
-            }
-            <button onClick={resetCombat}
-              className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs cursor-pointer">Reset</button>
-          </div>
+    <div className="c-panel" style={{ maxHeight: "260px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ color: "var(--c-text)", fontSize: "0.85rem", fontWeight: 600 }}>⚔️ Initiative</span>
+          {started && <span style={{ color: "var(--c-text-muted)", fontSize: "0.7rem" }}>Round {round}</span>}
         </div>
-
-        <div className="space-y-1 mb-2">
-          {(started ? sorted : combatants).map((c, i) => {
-            const isActive = started && sorted[currentIdx]?.id === c.id;
-            return (
-              <div key={c.id} className={`flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors ${isActive ? "bg-amber-900/30 border border-amber-700" : "bg-black"}`}>
-                <span className="w-3 text-center text-amber-400">{isActive ? "▶" : ""}</span>
-                <span className={`flex-1 truncate font-medium ${c.isPlayer ? "text-amber-300" : "text-white"}`}>{c.name}{c.isPlayer ? " (you)" : ""}</span>
-                <div className="flex items-center gap-1">
-                  {c.isPlayer && <button onClick={rollPlayerInit} className="text-zinc-400 hover:text-white cursor-pointer px-1">🎲</button>}
-                  <span className="text-zinc-400 w-14 text-right">Init: <span className="text-white font-bold">{c.initiative}</span></span>
-                </div>
-                <button onClick={() => { setCombatants(prev => prev.filter(x => x.id !== c.id)); setCurrentIdx(0); }} className="text-zinc-700 hover:text-red-400 cursor-pointer ml-1">✕</button>
-              </div>
-            );
-          })}
-          {combatants.length === 0 && <p className="text-zinc-700 text-xs text-center py-1">Add combatants below</p>}
+        <div style={{ display: "flex", gap: "0.3rem" }}>
+          {!started
+            ? <button onClick={() => setStarted(true)} disabled={combatants.length < 2}
+                style={{ padding: "0.2rem 0.5rem", background: "var(--c-accent)", color: "var(--c-bg)", borderRadius: 3, fontSize: "0.65rem", cursor: "pointer", fontWeight: 700, border: "none", opacity: combatants.length < 2 ? 0.4 : 1 }}>Start</button>
+            : <button onClick={nextTurn}
+                style={{ padding: "0.2rem 0.5rem", background: "var(--c-accent)", color: "var(--c-bg)", borderRadius: 3, fontSize: "0.65rem", cursor: "pointer", fontWeight: 700, border: "none" }}>Next →</button>
+          }
+          <button onClick={resetCombat}
+            style={{ padding: "0.2rem 0.5rem", background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-text-dim)", borderRadius: 3, fontSize: "0.65rem", cursor: "pointer" }}>Reset</button>
         </div>
-
-        <div className="flex gap-1 pt-2 border-t border-zinc-800">
-          <input className="bg-black border border-zinc-700 rounded px-2 py-1 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-amber-500 flex-1"
-            placeholder="Enemy name…" value={newName}
-            onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addCombatant()} />
-          <input className="bg-black border border-zinc-700 rounded px-2 py-1 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-amber-500 w-14 text-center"
-            placeholder="Init" type="number" value={newInit} onChange={e => setNewInit(e.target.value)} />
-          <button onClick={addCombatant}
-            className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded text-xs cursor-pointer font-bold">Add</button>
-        </div>
-        <p className="text-zinc-700 text-xs mt-1">Leave Init blank to auto-roll d20.</p>
       </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", marginBottom: "0.5rem" }}>
+        {(started ? sorted : combatants).map((c, i) => {
+          const isActive = started && sorted[currentIdx]?.id === c.id;
+          return (
+            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderRadius: 4, padding: "0.35rem 0.5rem", fontSize: "0.75rem", background: isActive ? "rgba(200,169,110,0.06)" : "var(--c-bg)", border: `1px solid ${isActive ? "var(--c-accent-dim)" : "var(--c-border)"}` }}>
+              <span style={{ width: "0.75rem", textAlign: "center", color: "var(--c-accent)", fontSize: "0.6rem" }}>{isActive ? "▶" : ""}</span>
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 500, color: c.isPlayer ? "var(--c-accent)" : "var(--c-text)" }}>{c.name}{c.isPlayer ? " (you)" : ""}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                {c.isPlayer && <button onClick={rollPlayerInit} style={{ color: "var(--c-text-muted)", cursor: "pointer", padding: "0 0.2rem", background: "none", border: "none", fontSize: "0.75rem" }}>🎲</button>}
+                <span style={{ color: "var(--c-text-muted)", fontSize: "0.65rem", minWidth: "3.5rem", textAlign: "right" }}>Init: <span style={{ color: "var(--c-text)", fontWeight: 700 }}>{c.initiative}</span></span>
+              </div>
+              <button onClick={() => { setCombatants(prev => prev.filter(x => x.id !== c.id)); setCurrentIdx(0); }} style={{ color: "var(--c-text-muted)", cursor: "pointer", marginLeft: "0.2rem", background: "none", border: "none", fontSize: "0.75rem" }}>✕</button>
+            </div>
+          );
+        })}
+        {combatants.length === 0 && <p style={{ color: "var(--c-text-muted)", fontSize: "0.75rem", textAlign: "center", padding: "0.25rem 0", margin: 0 }}>Add combatants below</p>}
+      </div>
+
+      <div style={{ display: "flex", gap: "0.3rem", paddingTop: "0.5rem", borderTop: "1px solid var(--c-border)" }}>
+        <input style={{ flex: 1, background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 4, padding: "0.3rem 0.5rem", color: "var(--c-text)", fontSize: "0.72rem", outline: "none" }}
+          placeholder="Enemy name…" value={newName}
+          onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addCombatant()} />
+        <input style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 4, padding: "0.3rem 0.25rem", color: "var(--c-text)", fontSize: "0.72rem", outline: "none", width: "3.5rem", textAlign: "center" }}
+          placeholder="Init" type="number" value={newInit} onChange={e => setNewInit(e.target.value)} />
+        <button onClick={addCombatant}
+          style={{ padding: "0.3rem 0.6rem", background: "var(--c-accent)", color: "var(--c-bg)", borderRadius: 4, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", border: "none" }}>Add</button>
+      </div>
+      <p style={{ margin: "0.3rem 0 0", color: "var(--c-text-muted)", fontSize: "0.6rem" }}>Leave Init blank to auto-roll d20.</p>
     </div>
   );
 }
@@ -545,44 +535,44 @@ function SavedCampaignsScreen({ onBack, onContinue }) {
   }
 
   if (saves.length === 0) return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="p-4">
-        <button onClick={onBack} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
+    <div className="chronicle-app" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "1rem" }}>
+        <button onClick={onBack} className="c-back-btn">←</button>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center p-6">
-        <p className="text-zinc-500 text-lg font-serif mb-2">No saved campaigns</p>
-        <p className="text-zinc-700 text-sm mb-8">Start a new adventure and your progress saves automatically.</p>
-        <button className={btn} onClick={onBack}>← Back</button>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+        <p style={{ color: "var(--c-text-muted)", fontSize: "1.1rem", marginBottom: "0.5rem" }}>No saved campaigns</p>
+        <p style={{ color: "var(--c-text-muted)", fontSize: "0.85rem", marginBottom: "2rem", opacity: 0.6 }}>Start a new adventure and your progress saves automatically.</p>
+        <button className="c-btn-ghost" style={{ width: "auto", padding: "0.65rem 1.5rem" }} onClick={onBack}>← Back</button>
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="flex items-center gap-3 p-4 border-b border-zinc-900">
-        <button onClick={onBack} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-        <span className="text-zinc-400 text-sm">Saved Campaigns</span>
+    <div className="chronicle-app" style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem 1rem", borderBottom: "1px solid var(--c-border)" }}>
+        <button onClick={onBack} className="c-back-btn">←</button>
+        <span style={{ color: "var(--c-text-muted)", fontSize: "0.85rem" }}>Saved Campaigns</span>
       </div>
-      <div className="px-4 py-3 space-y-1 overflow-y-auto">
+      <div style={{ padding: "0.75rem 1rem", display: "flex", flexDirection: "column", gap: "0.35rem", overflowY: "auto" }}>
         {saves.map((save, i) => (
           <div key={save.id}>
             {confirmDelete === save.id ? (
-              <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900 rounded-xl border border-zinc-800">
-                <span className="flex-1 text-zinc-400 text-sm">Delete this save?</span>
-                <button onClick={() => handleDelete(save.id)} className="px-3 py-1 bg-red-700 hover:bg-red-600 text-white rounded-lg text-xs cursor-pointer">Delete</button>
-                <button onClick={() => setConfirmDelete(null)} className="px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-xs cursor-pointer">Cancel</button>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.75rem 1rem", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 6 }}>
+                <span style={{ flex: 1, color: "var(--c-text-dim)", fontSize: "0.85rem" }}>Delete this save?</span>
+                <button onClick={() => handleDelete(save.id)} style={{ padding: "0.25rem 0.75rem", background: "rgba(155,48,48,0.4)", border: "1px solid rgba(155,48,48,0.6)", color: "#e87070", borderRadius: 4, fontSize: "0.7rem", cursor: "pointer" }}>Delete</button>
+                <button onClick={() => setConfirmDelete(null)} style={{ padding: "0.25rem 0.75rem", background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-text-dim)", borderRadius: 4, fontSize: "0.7rem", cursor: "pointer" }}>Cancel</button>
               </div>
             ) : (
-              <div className="flex items-center px-4 py-4 bg-zinc-900 hover:bg-zinc-800 rounded-xl border border-zinc-800 transition-colors cursor-pointer" onClick={() => onContinue(save)}>
-                <span className="text-zinc-600 text-sm w-7 flex-shrink-0">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium truncate">{save.character?.name}</p>
-                  <p className="text-zinc-500 text-xs">{save.character?.race} · {save.character?.class} · {formatDate(save.savedAt)}</p>
-                  {save.preview && <p className="text-zinc-700 text-xs mt-0.5 italic truncate">"{save.preview}"</p>}
+              <div style={{ display: "flex", alignItems: "center", padding: "0.85rem 1rem", background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 6, cursor: "pointer" }} onClick={() => onContinue(save)}>
+                <span style={{ color: "var(--c-text-muted)", fontSize: "0.85rem", width: "1.75rem", flexShrink: 0 }}>{i + 1}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, color: "var(--c-text)", fontWeight: 500 }}>{save.character?.name}</p>
+                  <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.75rem" }}>{save.character?.race} · {save.character?.class} · {formatDate(save.savedAt)}</p>
+                  {save.preview && <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.72rem", fontStyle: "italic" }}>"{save.preview}"</p>}
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                  <button onClick={e => { e.stopPropagation(); setConfirmDelete(save.id); }} className="text-zinc-700 hover:text-red-400 text-sm cursor-pointer transition-colors">🗑</button>
-                  <span className="text-zinc-600 text-lg">›</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0, marginLeft: "0.5rem" }}>
+                  <button onClick={e => { e.stopPropagation(); setConfirmDelete(save.id); }} style={{ color: "var(--c-text-muted)", cursor: "pointer", background: "none", border: "none", fontSize: "0.85rem" }}>🗑</button>
+                  <span style={{ color: "var(--c-text-muted)", fontSize: "1.1rem" }}>›</span>
                 </div>
               </div>
             )}
@@ -595,12 +585,12 @@ function SavedCampaignsScreen({ onBack, onContinue }) {
 
 // ── Encounter UI components ────────────────────────────────────────────────
 
-function EncounterHpBar({ current, max, color = "bg-green-500" }) {
+function EncounterHpBar({ current, max }) {
   const pct = Math.max(0, Math.min(100, (current / max) * 100));
-  const bar = pct <= 25 ? "bg-red-500" : pct <= 50 ? "bg-amber-500" : color;
+  const cls = pct <= 25 ? "red" : pct <= 50 ? "amber" : "";
   return (
-    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
-      <div className={`h-full rounded-full transition-all duration-500 ${bar}`} style={{ width: `${pct}%` }} />
+    <div className="c-hp-track">
+      <div className={`c-hp-fill${cls ? " " + cls : ""}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
@@ -622,48 +612,40 @@ function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack,
     : lastRoll.enemyResult === "heavy"                 ? "text-orange-400"
     :                                                    "text-red-400";
 
-  const btn = "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 active:scale-95 text-xs tracking-wide";
-
   return (
-    <div className="flex-shrink-0 bg-zinc-950 border-t border-zinc-800 px-4 pt-3 pb-3 flex flex-col gap-2">
+    <div className="c-encounter-panel">
       {/* HP rows */}
-      <div className="flex gap-2">
-        <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500">{enemy.tierLabel}</span>
-            <span className="text-[10px] font-mono text-red-400">{enemy.hp}/{enemy.maxHp} HP</span>
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ flex: 1, background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, padding: "0.6rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--c-text-muted)" }}>{enemy.tierLabel}</span>
+            <span style={{ fontSize: "0.6rem", fontFamily: "monospace", color: "var(--c-red-bright)" }}>{enemy.hp}/{enemy.maxHp} HP</span>
           </div>
-          <p className="text-white text-xs font-semibold leading-none">{enemy.name}</p>
-          <EncounterHpBar current={enemy.hp} max={enemy.maxHp} color="bg-red-500" />
+          <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--c-text)", lineHeight: 1, margin: 0 }}>{enemy.name}</p>
+          <EncounterHpBar current={enemy.hp} max={enemy.maxHp} />
         </div>
-        <div className={`flex-1 border rounded-xl px-3 py-2 flex flex-col gap-1 ${dying ? "bg-red-950/40 border-red-900 animate-pulse" : "bg-zinc-900 border-zinc-800"}`}>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500">{dying ? "💀 Dying" : "You"}</span>
-            <span className={`text-[10px] font-mono ${dying ? "text-red-400" : playerHp <= Math.ceil(playerMaxHp * 0.25) ? "text-red-400" : "text-green-400"}`}>
-              {playerHp}/{playerMaxHp} HP
-            </span>
+        <div style={{ flex: 1, background: dying ? "rgba(155,48,48,0.15)" : "var(--c-surface2)", border: `1px solid ${dying ? "rgba(155,48,48,0.5)" : "var(--c-border)"}`, borderRadius: 6, padding: "0.6rem 0.75rem", display: "flex", flexDirection: "column", gap: "0.35rem", animation: dying ? "pulse 2s infinite" : "none" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.12em", color: dying ? "#e87070" : "var(--c-text-muted)" }}>{dying ? "💀 Dying" : "You"}</span>
+            <span style={{ fontSize: "0.6rem", fontFamily: "monospace", color: dying ? "#e87070" : playerHp <= Math.ceil(playerMaxHp * 0.25) ? "var(--c-red-bright)" : "#4a9a5a" }}>{playerHp}/{playerMaxHp} HP</span>
           </div>
-          <p className="text-white text-xs font-semibold leading-none">Round {battleStats.rounds + 1}</p>
+          <p style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--c-text)", lineHeight: 1, margin: 0 }}>Round {battleStats.rounds + 1}</p>
           <EncounterHpBar current={playerHp} max={playerMaxHp} />
         </div>
       </div>
 
       {/* Death save tracker */}
       {dying && (
-        <div className="bg-red-950/30 border border-red-900/60 rounded-xl px-3 py-2 flex items-center justify-between">
-          <span className="text-red-300 text-[11px] font-bold uppercase tracking-widest">Death Saves</span>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-green-400 font-mono">✓</span>
-              {[0,1,2].map(i => (
-                <div key={i} className={`w-4 h-4 rounded-full border ${i < deathSaves.successes ? "bg-green-500 border-green-400" : "bg-zinc-800 border-zinc-700"}`} />
-              ))}
+        <div style={{ background: "rgba(155,48,48,0.12)", border: "1px solid rgba(155,48,48,0.4)", borderRadius: 6, padding: "0.5rem 0.75rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ color: "#e87070", fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em" }}>Death Saves</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <span style={{ fontSize: "0.6rem", color: "#4a9a5a" }}>✓</span>
+              {[0,1,2].map(i => <div key={i} style={{ width: 14, height: 14, borderRadius: "50%", border: `1px solid ${i < deathSaves.successes ? "#3a9a4a" : "var(--c-border)"}`, background: i < deathSaves.successes ? "#3a9a4a" : "var(--c-bg)" }} />)}
             </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] text-red-400 font-mono">✗</span>
-              {[0,1,2].map(i => (
-                <div key={i} className={`w-4 h-4 rounded-full border ${i < deathSaves.failures ? "bg-red-500 border-red-400" : "bg-zinc-800 border-zinc-700"}`} />
-              ))}
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              <span style={{ fontSize: "0.6rem", color: "var(--c-red-bright)" }}>✗</span>
+              {[0,1,2].map(i => <div key={i} style={{ width: 14, height: 14, borderRadius: "50%", border: `1px solid ${i < deathSaves.failures ? "var(--c-red-bright)" : "var(--c-border)"}`, background: i < deathSaves.failures ? "var(--c-red-bright)" : "var(--c-bg)" }} />)}
             </div>
           </div>
         </div>
@@ -671,25 +653,21 @@ function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack,
 
       {/* Dice display */}
       {lastRoll && (
-        <div className="flex gap-2">
-          <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 py-1.5">
-            <span className="text-[10px] text-zinc-500">{isDeathSave ? "💫 Death Save" : "⚔️ You"}</span>
-            <span className={`text-2xl font-black leading-none ${playerColor}`}>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <div style={{ flex: 1, background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.4rem" }}>
+            <span style={{ fontSize: "0.55rem", color: "var(--c-text-muted)" }}>{isDeathSave ? "💫 Death Save" : "⚔️ You"}</span>
+            <span style={{ fontSize: "1.5rem", fontWeight: 900, lineHeight: 1, color: playerColor.replace("text-", "").replace("-400","").replace("zinc-500","var(--c-text-muted)").includes("green") ? "#4a9a5a" : playerColor.includes("yellow") ? "var(--c-accent)" : playerColor.includes("red") ? "var(--c-red-bright)" : playerColor.includes("blue") ? "#6a88d8" : "var(--c-text-muted)" }}>
               {lastRoll.action === "defend" ? "—" : lastRoll.playerRoll}
             </span>
-            <span className={`text-[10px] font-bold ${playerColor}`}>
-              {isDeathSave
-                ? (lastRoll.playerRoll >= 10 ? "SUCCESS" : "FAILURE")
-                : lastRoll.action === "defend" ? "STANCE"
-                : lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE"
-                : lastRoll.playerHit ? "HIT" : "MISS"}
+            <span style={{ fontSize: "0.55rem", fontWeight: 700, color: playerColor.includes("green") ? "#4a9a5a" : playerColor.includes("yellow") ? "var(--c-accent)" : playerColor.includes("red") ? "var(--c-red-bright)" : playerColor.includes("blue") ? "#6a88d8" : "var(--c-text-muted)" }}>
+              {isDeathSave ? (lastRoll.playerRoll >= 10 ? "SUCCESS" : "FAILURE") : lastRoll.action === "defend" ? "STANCE" : lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE" : lastRoll.playerHit ? "HIT" : "MISS"}
             </span>
           </div>
           {!isDeathSave && (
-            <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 py-1.5">
-              <span className="text-[10px] text-zinc-500">👺 {enemy.name}</span>
-              <span className={`text-2xl font-black leading-none ${enemyColor}`}>{lastRoll.enemyRoll || "—"}</span>
-              <span className={`text-[10px] font-bold ${enemyColor}`}>
+            <div style={{ flex: 1, background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.4rem" }}>
+              <span style={{ fontSize: "0.55rem", color: "var(--c-text-muted)" }}>👺 {enemy.name}</span>
+              <span style={{ fontSize: "1.5rem", fontWeight: 900, lineHeight: 1, color: enemyColor.includes("orange") ? "#c8883a" : enemyColor.includes("red") ? "var(--c-red-bright)" : "var(--c-text-muted)" }}>{lastRoll.enemyRoll || "—"}</span>
+              <span style={{ fontSize: "0.55rem", fontWeight: 700, color: enemyColor.includes("orange") ? "#c8883a" : enemyColor.includes("red") ? "var(--c-red-bright)" : "var(--c-text-muted)" }}>
                 {lastRoll.enemyResult === "miss" ? "MISS" : lastRoll.enemyResult === "heavy" ? "HEAVY" : "HIT"}
               </span>
             </div>
@@ -699,40 +677,32 @@ function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack,
 
       {/* Last round log */}
       {lastCombatLog?.length > 0 && (
-        <div className="flex flex-col gap-0.5">
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>
           {lastCombatLog.slice(-3).map((line, i) => (
-            <p key={i} className={`text-[11px] font-mono ${i === lastCombatLog.slice(-3).length - 1 ? "text-zinc-300" : "text-zinc-600"}`}>{line}</p>
+            <p key={i} style={{ fontSize: "0.65rem", fontFamily: "monospace", margin: 0, color: i === lastCombatLog.slice(-3).length - 1 ? "var(--c-text-dim)" : "var(--c-text-muted)" }}>{line}</p>
           ))}
         </div>
       )}
 
       {/* Narration */}
       {encounter.narration && (
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-2">
-          <p className="text-zinc-300 text-xs leading-relaxed font-serif line-clamp-3">{encounter.narration}</p>
+        <div style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, padding: "0.6rem 0.75rem" }}>
+          <p style={{ margin: 0, color: "var(--c-text-dim)", fontSize: "0.9rem", lineHeight: 1.6, fontFamily: "'Crimson Pro', serif" }}>{encounter.narration}</p>
         </div>
       )}
-      {loading && <p className="text-center text-zinc-600 text-xs animate-pulse">Resolving turn…</p>}
+      {loading && <p style={{ textAlign: "center", color: "var(--c-text-muted)", fontSize: "0.7rem", margin: 0 }}>Resolving turn…</p>}
 
       {/* Action buttons — death save mode or normal */}
       {dying ? (
-        <button onClick={onDeathSave} disabled={loading} className={`${btn} w-full bg-red-900/60 hover:bg-red-800 border border-red-700 text-red-200 py-3`}>
-          <span className="text-lg">🎲</span>Roll Death Save
+        <button onClick={onDeathSave} disabled={loading} className="c-encounter-btn c-encounter-btn-death">
+          <span style={{ fontSize: "1.1rem" }}>🎲</span> Roll Death Save
         </button>
       ) : (
-        <div className="flex gap-1.5">
-          <button onClick={onAttack} disabled={loading} className={`${btn} bg-red-900 hover:bg-red-800 text-white`}>
-            <span className="text-base">⚔️</span>Attack
-          </button>
-          <button onClick={onHeavy} disabled={loading} className={`${btn} bg-orange-900 hover:bg-orange-800 text-white`}>
-            <span className="text-base">💥</span>Heavy
-          </button>
-          <button onClick={onDefend} disabled={loading} className={`${btn} bg-blue-900 hover:bg-blue-800 text-white`}>
-            <span className="text-base">🛡️</span>Defend
-          </button>
-          <button onClick={onFlee} disabled={loading} className={`${btn} bg-zinc-800 hover:bg-zinc-700 text-zinc-300`}>
-            <span className="text-base">🏃</span>Flee
-          </button>
+        <div style={{ display: "flex", gap: "0.4rem" }}>
+          <button onClick={onAttack}  disabled={loading} className="c-encounter-btn c-encounter-btn-attack"><span>⚔️</span>Attack</button>
+          <button onClick={onHeavy}   disabled={loading} className="c-encounter-btn c-encounter-btn-heavy"><span>💥</span>Heavy</button>
+          <button onClick={onDefend}  disabled={loading} className="c-encounter-btn c-encounter-btn-defend"><span>🛡️</span>Defend</button>
+          <button onClick={onFlee}    disabled={loading} className="c-encounter-btn c-encounter-btn-flee"><span>🏃</span>Flee</button>
         </div>
       )}
     </div>
@@ -743,52 +713,46 @@ function EncounterRecap({ recap, onDismiss }) {
   const isVictory = recap.outcome === "victory";
   const isFled    = recap.outcome === "fled";
   return (
-    <div className="flex-shrink-0 bg-zinc-950 border-t border-zinc-800 px-4 pt-3 pb-3 flex flex-col gap-2">
-      <div className={`rounded-xl px-4 py-2 flex items-center justify-between border ${
-        isVictory ? "bg-green-950/40 border-green-800" :
-        isFled    ? "bg-zinc-900 border-zinc-700" :
-                    "bg-red-950/40 border-red-900"
-      }`}>
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{isVictory ? "⚔️" : isFled ? "🏃" : "💀"}</span>
-          <span className={`text-sm font-black tracking-widest uppercase ${isVictory ? "text-green-300" : isFled ? "text-zinc-300" : "text-red-400"}`}>
+    <div className="c-encounter-panel">
+      <div style={{ borderRadius: 6, padding: "0.6rem 0.85rem", display: "flex", alignItems: "center", justifyContent: "space-between", background: isVictory ? "rgba(40,100,50,0.15)" : isFled ? "var(--c-surface2)" : "rgba(155,48,48,0.15)", border: `1px solid ${isVictory ? "rgba(40,100,50,0.4)" : isFled ? "var(--c-border)" : "rgba(155,48,48,0.4)"}` }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <span style={{ fontSize: "1.1rem" }}>{isVictory ? "⚔️" : isFled ? "🏃" : "💀"}</span>
+          <span style={{ fontFamily: "'Cinzel', serif", fontSize: "0.65rem", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 700, color: isVictory ? "#4ab060" : isFled ? "var(--c-text-dim)" : "var(--c-red-bright)" }}>
             {isVictory ? "Victory" : isFled ? "Escaped" : "Defeated"}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-[11px] font-mono">
-          <span className="text-red-400">⚔️ {recap.dealt}</span>
-          <span className="text-amber-400">🛡 {recap.taken}</span>
-          <span className="text-zinc-400">↺ {recap.rounds}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", fontFamily: "monospace", fontSize: "0.65rem" }}>
+          <span style={{ color: "var(--c-red-bright)" }}>⚔️ {recap.dealt}</span>
+          <span style={{ color: "var(--c-accent)" }}>🛡 {recap.taken}</span>
+          <span style={{ color: "var(--c-text-muted)" }}>↺ {recap.rounds}</span>
         </div>
       </div>
       {recap.narration && (
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-3 py-2">
-          <p className="text-zinc-300 text-xs leading-relaxed font-serif">{recap.narration}</p>
+        <div style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", borderRadius: 6, padding: "0.65rem 0.85rem" }}>
+          <p style={{ margin: 0, color: "var(--c-text-dim)", fontSize: "0.92rem", lineHeight: 1.65, fontFamily: "'Crimson Pro', serif" }}>{recap.narration}</p>
         </div>
       )}
       {recap.loot && (recap.loot.gold > 0 || recap.loot.items.length > 0) && (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[10px] uppercase tracking-widest text-zinc-600">Loot</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+          <p style={{ margin: 0, fontSize: "0.55rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "var(--c-text-muted)" }}>Loot</p>
           {recap.loot.gold > 0 && (
-            <div className="flex items-center gap-2 bg-yellow-950/30 border border-yellow-900/50 rounded-lg px-3 py-1.5">
+            <div className="c-loot-gold-card">
               <span>🪙</span>
-              <span className="text-yellow-300 text-xs font-semibold">+{recap.loot.gold} gold</span>
+              <span style={{ color: "var(--c-accent)", fontSize: "0.85rem", fontWeight: 600 }}>+{recap.loot.gold} gold</span>
             </div>
           )}
           {recap.loot.items.map((item, i) => (
-            <div key={i} className="flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5">
-              <span className="text-sm">{item.type === "Weapon" ? "⚔️" : item.type === "Armor" ? "🛡️" : item.type === "Consumable" ? "🧪" : "📦"}</span>
+            <div key={i} className="c-loot-item-card">
+              <span style={{ fontSize: "1.1rem" }}>{item.type === "Weapon" ? "⚔️" : item.type === "Armor" ? "🛡️" : item.type === "Consumable" ? "🧪" : "📦"}</span>
               <div>
-                <p className="text-white text-xs font-semibold">{item.name}</p>
-                <p className="text-zinc-500 text-[10px]">{item.desc}</p>
+                <p style={{ margin: 0, color: "var(--c-text)", fontSize: "0.85rem", fontWeight: 600 }}>{item.name}</p>
+                <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.7rem" }}>{item.desc}</p>
               </div>
             </div>
           ))}
         </div>
       )}
-      <button onClick={onDismiss} className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold rounded-xl text-sm transition-colors cursor-pointer">
-        Continue →
-      </button>
+      <button onClick={onDismiss} className="c-continue-btn">Continue →</button>
     </div>
   );
 }
@@ -1194,71 +1158,57 @@ export default function App() {
   if (screen === "home") {
     const hasSaves = loadSaves().length > 0;
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="p-4">
-          <div className="inline-flex items-center bg-zinc-900 rounded-full px-3 py-2">
-            <span className="text-lg">🔥</span>
-          </div>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center px-6 gap-10">
-          <div className="text-center">
-            <h1 className="text-5xl font-serif font-bold mb-2 tracking-tight">Chronicle</h1>
-            <p className="text-zinc-600 text-xs tracking-widest uppercase">AI Dungeon Master · D&D 5e</p>
-          </div>
-          <div className="w-full max-w-xs space-y-4">
-            <div className="text-center">
-              <p className="text-zinc-600 text-sm mb-2 font-serif">Your name…</p>
+      <div className="chronicle-app">
+        <div className="c-screen c-home">
+          <svg className="c-home-logo" viewBox="0 0 52 52" fill="none">
+            <path d="M26 4L30 18H44L33 27L37 41L26 32L15 41L19 27L8 18H22L26 4Z" fill="none" stroke="#c8a96e" strokeWidth="1.5" strokeLinejoin="round"/>
+            <path d="M26 14L28.5 22H37L30.5 26.5L33 34.5L26 30L19 34.5L21.5 26.5L15 22H23.5L26 14Z" fill="#c8a96e" opacity="0.15"/>
+          </svg>
+          <h1 className="c-title">CHRONICLE</h1>
+          <p className="c-subtitle">AI Dungeon Master · D&amp;D 5e</p>
+
+          <div className="c-home-form">
+            <div className="c-home-input-wrap">
+              <label className="c-label">Your name</label>
               <input
-                className="w-full bg-transparent border-0 border-b border-zinc-800 text-white text-2xl font-serif text-center pb-2 focus:outline-none focus:border-amber-500 placeholder-zinc-800 transition-colors"
-                placeholder="Type here…"
+                className="c-field-input"
+                placeholder="Enter your name…"
                 value={playerName}
                 onChange={e => setPlayerName(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && createSession()}
               />
             </div>
-            <button
-              className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold text-lg rounded-2xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
-              onClick={createSession}
-            >
-              ▶ BEGIN
-            </button>
-            <button
-              className="w-full py-3 bg-transparent border border-zinc-800 hover:border-amber-700 text-zinc-400 hover:text-amber-400 rounded-2xl font-semibold transition-colors cursor-pointer"
-              onClick={() => {
-                setCampaignState(createCampaignState(goblinCaveCampaign));
-                setScreen("campaign");
-              }}
-            >
+
+            <button className="c-btn-primary" onClick={createSession}>▶ Begin</button>
+
+            <button className="c-btn-ghost" onClick={() => { setCampaignState(createCampaignState(goblinCaveCampaign)); setScreen("campaign"); }}>
               ⚔️ Goblin Cave
             </button>
+
             {hasSaves && (
-              <button
-                className="w-full py-3 bg-transparent border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white rounded-2xl font-semibold transition-colors cursor-pointer"
-                onClick={() => setScreen("saves")}
-              >
+              <button className="c-btn-ghost" onClick={() => setScreen("saves")}>
                 Continue Campaign
               </button>
             )}
-            {/* Join with session code */}
-            <div className="pt-2">
-              <p className="text-zinc-700 text-xs text-center mb-2 tracking-widest uppercase">Join a session</p>
-              <div className="flex gap-2 items-center">
-                <input
-                  className="flex-1 bg-transparent border-b border-zinc-800 text-white text-center text-lg font-mono pb-1 focus:outline-none focus:border-amber-500 placeholder-zinc-800 tracking-widest uppercase transition-colors"
-                  placeholder="CODE"
-                  value={inputCode}
-                  onChange={e => setInputCode(e.target.value.toUpperCase())}
-                  maxLength={6}
-                  onKeyDown={e => e.key === "Enter" && joinSession()}
-                />
-                <button
-                  onClick={joinSession}
-                  disabled={inputCode.trim().length < 4}
-                  className="text-zinc-500 hover:text-amber-400 disabled:opacity-30 text-sm font-bold cursor-pointer transition-colors tracking-wide"
-                >
-                  JOIN →
-                </button>
-              </div>
+
+            <div className="c-divider">
+              <div className="c-divider-line" />
+              <span className="c-divider-text">Join a session</span>
+              <div className="c-divider-line" />
+            </div>
+
+            <div className="c-join-row">
+              <input
+                className="c-join-input"
+                placeholder="Enter session code…"
+                value={inputCode}
+                onChange={e => setInputCode(e.target.value.toUpperCase())}
+                maxLength={6}
+                onKeyDown={e => e.key === "Enter" && joinSession()}
+              />
+              <button className="c-join-btn" onClick={joinSession} disabled={inputCode.trim().length < 4}>
+                Join →
+              </button>
             </div>
           </div>
         </div>
@@ -1277,30 +1227,27 @@ export default function App() {
   if (screen === "character") {
     // Step 0: Name
     if (charStep === 0) return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="flex items-center justify-between p-4">
-          <button onClick={() => setScreen("home")} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <div className="flex items-center gap-3">
-            {sessionCode && <span className="text-amber-500 font-mono font-bold tracking-widest text-sm">{sessionCode}</span>}
-            <span className="text-zinc-600 text-sm">Step 1 of 5</span>
+      <div className="chronicle-app">
+        <div className="c-screen c-character">
+          <div className="c-step-header">
+            <button className="c-back-btn" onClick={() => setScreen("home")}>←</button>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+              {sessionCode && <span className="c-session-badge">{sessionCode}</span>}
+              <span className="c-step-hint">Step 1 of 5</span>
+            </div>
           </div>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center px-8 gap-10">
-          <p className="text-zinc-500 text-lg font-serif">Enter your character's name…</p>
+          <p className="c-step-prompt">Name your hero…</p>
           <input
-            className="w-full bg-transparent border-0 text-center text-4xl font-serif text-zinc-300 placeholder-zinc-800 focus:outline-none focus:text-white transition-colors"
-            placeholder="Type here…"
+            className="c-field-input"
+            style={{ fontSize: "2rem", textAlign: "center", marginBottom: "2rem" }}
+            placeholder="Enter a name…"
             value={charName}
             onChange={e => setCharName(e.target.value)}
             onKeyDown={e => e.key === "Enter" && charName.trim() && setCharStep(1)}
             autoFocus
           />
-          <button
-            className="px-12 py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold text-lg rounded-2xl flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-40"
-            disabled={!charName.trim()}
-            onClick={() => charName.trim() && setCharStep(1)}
-          >
-            ▶ START
+          <button className="c-btn-primary" disabled={!charName.trim()} onClick={() => charName.trim() && setCharStep(1)}>
+            ▶ Continue
           </button>
         </div>
       </div>
@@ -1308,21 +1255,21 @@ export default function App() {
 
     // Step 1: Class
     if (charStep === 1) return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="flex items-center justify-between p-4">
-          <button onClick={() => setCharStep(0)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">Step 2 of 5</span>
-        </div>
-        <div className="px-4 py-2 flex flex-col flex-1 overflow-y-auto">
-          <p className="text-zinc-500 text-lg mb-4 font-serif">Select a class…</p>
-          <div className="space-y-1">
+      <div className="chronicle-app">
+        <div className="c-screen c-character">
+          <div className="c-step-header">
+            <button className="c-back-btn" onClick={() => setCharStep(0)}>←</button>
+            <span className="c-step-hint">Step 2 of 5</span>
+          </div>
+          <p className="c-step-prompt">Choose your class…</p>
+          <div>
             {CLASSES.map((c, i) => (
               <button key={c} onClick={() => { setCharClass(c); setCharStep(2); }}
-                className={`w-full flex items-center px-4 py-4 rounded-xl border transition-colors cursor-pointer ${charClass === c ? "bg-zinc-800 border-amber-500" : "bg-zinc-900 border-zinc-800 hover:bg-zinc-800"}`}>
-                <span className="text-zinc-600 text-sm w-7 text-left">{i + 1}</span>
-                <span className="text-lg mr-3">{CLASS_ICONS[c]}</span>
-                <span className="flex-1 text-left text-white text-base font-medium">{c}</span>
-                <span className="text-zinc-600 text-lg">›</span>
+                className={`c-list-item${charClass === c ? " active" : ""}`}>
+                <span className="c-list-num">{i + 1}</span>
+                <span className="c-list-icon">{CLASS_ICONS[c]}</span>
+                <span style={{ flex: 1 }}>{c}</span>
+                <span className="c-list-arrow">›</span>
               </button>
             ))}
           </div>
@@ -1332,20 +1279,20 @@ export default function App() {
 
     // Step 2: Race
     if (charStep === 2) return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="flex items-center justify-between p-4">
-          <button onClick={() => setCharStep(1)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">Step 3 of 5</span>
-        </div>
-        <div className="px-4 py-2 flex flex-col flex-1 overflow-y-auto">
-          <p className="text-zinc-500 text-lg mb-4 font-serif">Choose your race…</p>
-          <div className="space-y-1">
+      <div className="chronicle-app">
+        <div className="c-screen c-character">
+          <div className="c-step-header">
+            <button className="c-back-btn" onClick={() => setCharStep(1)}>←</button>
+            <span className="c-step-hint">Step 3 of 5</span>
+          </div>
+          <p className="c-step-prompt">Choose your race…</p>
+          <div>
             {RACES.map((r, i) => (
               <button key={r} onClick={() => { setCharRace(r); setCharStep(3); }}
-                className={`w-full flex items-center px-4 py-4 rounded-xl border transition-colors cursor-pointer ${charRace === r ? "bg-zinc-800 border-amber-500" : "bg-zinc-900 border-zinc-800 hover:bg-zinc-800"}`}>
-                <span className="text-zinc-600 text-sm w-7 text-left">{i + 1}</span>
-                <span className="flex-1 text-left text-white text-base font-medium">{r}</span>
-                <span className="text-zinc-600 text-lg">›</span>
+                className={`c-list-item${charRace === r ? " active" : ""}`}>
+                <span className="c-list-num">{i + 1}</span>
+                <span style={{ flex: 1 }}>{r}</span>
+                <span className="c-list-arrow">›</span>
               </button>
             ))}
           </div>
@@ -1355,142 +1302,156 @@ export default function App() {
 
     // Step 3: Stats
     if (charStep === 3) return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="flex items-center justify-between p-4">
-          <button onClick={() => setCharStep(2)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">Step 4 of 5 · {charName}</span>
-        </div>
-        <div className="px-4 py-2 flex-1 overflow-y-auto">
-          <p className="text-zinc-500 text-lg mb-4 font-serif">Set your ability scores…</p>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-zinc-600 text-sm">Roll 4d6, drop lowest</span>
-            <button onClick={autoGenerateCharacter} className={btnSm}>🎲 Roll Stats</button>
+      <div className="chronicle-app">
+        <div className="c-screen c-character">
+          <div className="c-step-header">
+            <button className="c-back-btn" onClick={() => setCharStep(2)}>←</button>
+            <span className="c-step-hint">Step 4 of 5 · {charName}</span>
           </div>
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {Object.entries(stats).map(([stat, val]) => (
-              <div key={stat} className="flex flex-col items-center bg-zinc-900 border border-zinc-800 rounded-xl p-3">
-                <p className="text-zinc-500 text-xs mb-1">{stat}</p>
-                <p className="text-white text-2xl font-bold">{val}</p>
-                <p className="text-amber-500 text-xs mb-2">{modifier(val)}</p>
-                <div className="flex gap-2">
-                  <button onClick={() => setStats(s => ({ ...s, [stat]: Math.max(3, s[stat] - 1) }))} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-sm cursor-pointer flex items-center justify-center">−</button>
-                  <button onClick={() => setStats(s => ({ ...s, [stat]: Math.min(20, s[stat] + 1) }))} className="w-6 h-6 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-sm cursor-pointer flex items-center justify-center">+</button>
+          <p className="c-step-prompt">Set your ability scores…</p>
+
+          <div className="c-card">
+            <div className="c-card-header">
+              <span className="c-label" style={{ margin: 0 }}>Ability Scores</span>
+              <button className="c-roll-btn" onClick={autoGenerateCharacter}>🎲 Roll Stats</button>
+            </div>
+            <div className="c-stat-grid">
+              {Object.entries(stats).map(([stat, val]) => (
+                <div key={stat} className="c-stat-box">
+                  <span className="c-stat-lbl">{stat}</span>
+                  <span className="c-stat-val">{val}</span>
+                  <span className="c-stat-mod">{modifier(val)}</span>
+                  <div className="c-stat-ctrl">
+                    <button className="c-stat-btn" onClick={() => setStats(s => ({ ...s, [stat]: Math.max(3, s[stat] - 1) }))}>−</button>
+                    <button className="c-stat-btn" onClick={() => setStats(s => ({ ...s, [stat]: Math.min(20, s[stat] + 1) }))}>+</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          <div className="mb-6">
-            <p className="text-xs text-zinc-500 uppercase tracking-wider mb-2">Starting Equipment</p>
-            <div className="flex flex-wrap gap-1">
+
+          <div className="c-card">
+            <p className="c-label">Starting Equipment</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
               {getStartingInventory(charClass).map((item, i) => (
-                <span key={i} className="text-xs px-2 py-1 rounded-full bg-zinc-800 text-zinc-300 border border-zinc-700">
+                <span key={i} style={{
+                  fontSize: "0.72rem", padding: "0.2rem 0.6rem",
+                  background: "var(--c-surface2)", border: "1px solid var(--c-border)",
+                  borderRadius: "3px", color: "var(--c-text-dim)"
+                }}>
                   {item.name}{item.qty > 1 ? ` ×${item.qty}` : ""}
                 </span>
               ))}
             </div>
           </div>
-          <button className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold text-lg rounded-2xl transition-colors cursor-pointer" onClick={() => setCharStep(4)}>
-            Next: Background →
-          </button>
+
+          <button className="c-btn-primary" onClick={() => setCharStep(4)}>Next: Background →</button>
         </div>
       </div>
     );
 
     // Step 4: Background
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <div className="flex items-center justify-between p-4">
-          <button onClick={() => setCharStep(3)} className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors">🔥</button>
-          <span className="text-zinc-600 text-sm">Step 5 of 5 · {charName}</span>
-        </div>
-        <div className="px-4 py-2 flex-1 overflow-y-auto">
-          <p className="text-zinc-500 text-lg mb-1 font-serif">Choose your background…</p>
-          <p className="text-zinc-700 text-xs mb-4">Shapes how the DM narrates your story.</p>
-          <div className="grid grid-cols-2 gap-2 mb-6">
+      <div className="chronicle-app">
+        <div className="c-screen c-character">
+          <div className="c-step-header">
+            <button className="c-back-btn" onClick={() => setCharStep(3)}>←</button>
+            <span className="c-step-hint">Step 5 of 5 · {charName}</span>
+          </div>
+          <p className="c-step-prompt">Choose your background…</p>
+          <p className="c-step-subtext">Shapes how the DM narrates your story.</p>
+          <div className="c-bg-grid">
             {BACKGROUNDS.map(bg => (
               <button key={bg.id} onClick={() => setCharBackground(bg.id)}
-                className={`flex flex-col items-start px-4 py-4 rounded-xl border transition-colors cursor-pointer text-left ${charBackground === bg.id ? "bg-zinc-800 border-amber-500" : "bg-zinc-900 border-zinc-800 hover:bg-zinc-800"}`}>
-                <span className="text-white font-semibold text-sm mb-0.5">{bg.label}</span>
-                <span className="text-zinc-500 text-xs">{bg.desc}</span>
+                className={`c-bg-card${charBackground === bg.id ? " active" : ""}`}>
+                <p style={{ color: "var(--c-text)", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.2rem" }}>{bg.label}</p>
+                <p style={{ color: "var(--c-text-muted)", fontSize: "0.75rem" }}>{bg.desc}</p>
               </button>
             ))}
           </div>
-          <button className="w-full py-4 bg-amber-500 hover:bg-amber-400 text-black font-bold text-lg rounded-2xl transition-colors cursor-pointer" onClick={enterGame}>
-            Enter the Campaign →
-          </button>
+          <button className="c-btn-primary" onClick={enterGame}>Enter the Campaign →</button>
         </div>
       </div>
     );
   }
 
   if (screen === "game") return (
-    <div className="h-screen bg-black text-white flex flex-col">
+    <div className="chronicle-app c-game">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black border-b border-zinc-900 flex-shrink-0">
-        <button
-          onClick={() => setScreen("home")}
-          className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-lg cursor-pointer hover:bg-zinc-800 transition-colors flex-shrink-0"
-          title="Back to home"
-        >🔥</button>
-        <div className="flex items-center gap-2">
-          {sessionCode && <span className="text-amber-600 font-mono text-xs font-bold tracking-widest">{sessionCode}</span>}
-          {speaking && <span className="text-xs text-amber-400 animate-pulse">● Speaking</span>}
-          {justSaved && <span className="text-xs text-green-400">✓</span>}
+      <div className="c-game-header">
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
+          <button className="c-back-btn" onClick={() => setScreen("home")} title="Back to home">←</button>
+          <div className="c-game-wordmark">
+            <div className="c-game-title">CHRONICLE</div>
+            {sessionCode && <div className="c-game-session">{sessionCode}</div>}
+          </div>
+        </div>
+        <div className="c-header-actions">
+          {speaking  && <span style={{ fontSize: "0.6rem", color: "var(--c-accent)", letterSpacing: "0.1em" }}>● Speaking</span>}
+          {justSaved && <span style={{ fontSize: "0.6rem", color: "#4a9a5a" }}>✓</span>}
           {TAB_BUTTONS.map(t => (
             <button key={t.id} onClick={() => setActiveTab(activeTab === t.id ? null : t.id)}
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-base cursor-pointer transition-colors ${activeTab === t.id ? "bg-amber-500 text-black" : "bg-zinc-900 text-zinc-400 hover:bg-zinc-800"}`}>
+              className={`c-icon-btn${activeTab === t.id ? " c-active" : ""}`}>
               {t.label.split(" ")[0]}
             </button>
           ))}
-          <span className="text-lg" title={`${character?.race} ${character?.class}`}>{getPortrait(character?.class)}</span>
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-red-950 border border-red-800 text-xs font-bold text-red-300">
-            ❤️ {currentHp}/{character?.hp}
-          </div>
-          <button onClick={() => { if (voiceEnabled) window.speechSynthesis?.pause(); else window.speechSynthesis?.resume(); setVoiceEnabled(!voiceEnabled); }}
-            className="w-9 h-9 rounded-full bg-zinc-900 flex items-center justify-center text-base cursor-pointer hover:bg-zinc-800 transition-colors">
+          <span title={`${character?.race} ${character?.class}`} style={{ fontSize: "1.1rem" }}>{getPortrait(character?.class)}</span>
+          <div className="c-hp-badge">♥ {currentHp}/{character?.hp}</div>
+          <button className="c-icon-btn" onClick={() => { if (voiceEnabled) window.speechSynthesis?.pause(); else window.speechSynthesis?.resume(); setVoiceEnabled(!voiceEnabled); }}>
             {voiceEnabled ? "🔊" : "🔇"}
           </button>
         </div>
       </div>
 
       {/* Story / Chat */}
-      <div ref={chatRef} className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+      <div ref={chatRef} className="c-chat">
         {messages.map(m => {
           if (m.role === "dm") return (
-            <div key={m.id} className="bg-zinc-900 rounded-2xl px-5 py-4">
-              <div className="text-white text-lg font-serif leading-relaxed">
-                {renderMarkdown(m.text)}
-              </div>
+            <div key={m.id} className="c-msg-dm">
+              <div className="c-msg-dm-label">Dungeon Master</div>
+              <div className="c-msg-dm-text">{renderMarkdown(m.text)}</div>
             </div>
           );
           if (m.role === "roll") {
-            const outcomeColor = {
-              critical: "text-yellow-400 border-yellow-800",
-              success:  "text-green-400 border-green-900",
-              partial:  "text-amber-400 border-amber-900",
-              failure:  "text-zinc-400 border-zinc-800",
-              fumble:   "text-red-400 border-red-900",
-            }[m.turnResult?.outcome] ?? "text-zinc-400 border-zinc-800";
+            const rollColors = {
+              critical: { color: "var(--c-accent)",    border: "rgba(200,169,110,0.4)" },
+              success:  { color: "#4a9a5a",            border: "rgba(74,154,90,0.4)" },
+              partial:  { color: "#c8a96e",            border: "rgba(200,169,110,0.3)" },
+              failure:  { color: "var(--c-text-muted)", border: "var(--c-border)" },
+              fumble:   { color: "var(--c-red-bright)", border: "rgba(196,58,58,0.4)" },
+            }[m.turnResult?.outcome] ?? { color: "var(--c-text-muted)", border: "var(--c-border)" };
             return (
-              <div key={m.id} className="flex justify-center">
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-950 border text-xs font-mono ${outcomeColor}`}>
+              <div key={m.id} style={{ display: "flex", justifyContent: "center" }}>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: "0.4rem",
+                  padding: "0.25rem 0.75rem", borderRadius: "20px",
+                  background: "var(--c-surface)", border: `1px solid ${rollColors.border}`,
+                  fontFamily: "'Cinzel', serif", fontSize: "0.65rem",
+                  letterSpacing: "0.05em", color: rollColors.color
+                }}>
                   🎲 {m.text}
                 </div>
               </div>
             );
           }
           return (
-            <div key={m.id} className="flex justify-end px-1">
-              <p className={`text-sm text-right max-w-xs leading-relaxed ${m.isRoll ? "text-amber-400 font-medium" : "text-zinc-500"}`}>
-                {m.text}
-              </p>
+            <div key={m.id} className="c-msg-player">
+              <div className="c-msg-player-bubble">
+                <div className="c-msg-player-label">You</div>
+                <div className="c-msg-player-text" style={m.isRoll ? { color: "var(--c-accent)", fontFamily: "'Cinzel',serif", fontSize: "0.75rem" } : {}}>
+                  {m.text}
+                </div>
+              </div>
             </div>
           );
         })}
         {loading && (
-          <div className="bg-zinc-900 rounded-2xl px-5 py-4">
-            <p className="text-amber-400/70 italic text-sm animate-pulse">{DM_THINKING[thinkingIdx % DM_THINKING.length]}</p>
+          <div className="c-msg-dm">
+            <div className="c-msg-dm-label">Dungeon Master</div>
+            <div className="c-msg-dm-text" style={{ color: "var(--c-accent)", opacity: 0.6, fontStyle: "italic", animation: "pulse 2s infinite" }}>
+              {DM_THINKING[thinkingIdx % DM_THINKING.length]}
+            </div>
           </div>
         )}
       </div>
@@ -1504,130 +1465,127 @@ export default function App() {
         const slotMaxes = getSpellSlotMaxes(character.class, character.level || 1);
         const isSpellcaster = SPELLCASTER_CLASSES.includes(character.class);
         return (
-          <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "320px", overflowY: "auto" }}>
-            <div className="px-4 py-3">
-              {/* Name + Level + AC */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{CLASS_ICONS[character.class]}</span>
-                  <div>
-                    <p className="font-semibold text-sm leading-none">{character.name}</p>
-                    <p className="text-zinc-400 text-xs">{character.race} · {character.class}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="bg-zinc-800 text-zinc-200 text-xs font-bold px-2 py-0.5 rounded-lg" title="Armor Class">AC {ac}</span>
-                  <span className="text-zinc-500 text-xs">Lvl</span>
-                  <button onClick={() => { setCharacter(c => ({ ...c, level: Math.max(1, (c.level||1) - 1) })); setUsedSlots(s => { const m = getSpellSlotMaxes(character.class, Math.max(1,(character.level||1)-1)); return Object.fromEntries(Object.entries(s).map(([k,v])=>[k,Math.min(v,m[k]||0)])); }); }} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-xs cursor-pointer flex items-center justify-center">−</button>
-                  <span className="text-white font-bold w-5 text-center text-sm">{character.level || 1}</span>
-                  <button onClick={() => setCharacter(c => ({ ...c, level: Math.min(20, (c.level||1) + 1) }))} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-white text-xs cursor-pointer flex items-center justify-center">+</button>
+          <div className="c-panel" style={{ maxHeight: "340px" }}>
+            {/* Name + Level + AC */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <span style={{ fontSize: "1.2rem" }}>{CLASS_ICONS[character.class]}</span>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "0.9rem", color: "var(--c-text)" }}>{character.name}</p>
+                  <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.7rem" }}>{character.race} · {character.class}</p>
                 </div>
               </div>
-
-              {/* HP Bar */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-zinc-500">HP</span>
-                  <span className={`text-xs font-bold ${currentHp === 0 ? "text-red-400 animate-pulse" : "text-white"}`}>{currentHp} / {character.hp}</span>
-                </div>
-                <div className="h-2 bg-black rounded-full overflow-hidden mb-2">
-                  <div className={`h-full rounded-full transition-all ${currentHp / character.hp > 0.5 ? "bg-green-500" : currentHp / character.hp > 0.25 ? "bg-yellow-500" : "bg-red-500"}`}
-                    style={{ width: `${Math.max(0, (currentHp / character.hp) * 100)}%` }} />
-                </div>
-                <div className="flex gap-1">
-                  {[1, 5, 10].map(n => (
-                    <button key={`d${n}`} onClick={() => setCurrentHp(h => Math.max(0, h - n))}
-                      className="flex-1 py-1 bg-red-900/60 hover:bg-red-800 text-red-300 rounded-lg text-xs cursor-pointer transition-colors">−{n}</button>
-                  ))}
-                  <div className="w-px bg-zinc-700 mx-0.5" />
-                  {[1, 5, 10].map(n => (
-                    <button key={`h${n}`} onClick={() => setCurrentHp(h => { const next = Math.min(character.hp, h + n); if (next > 0) setDeathSaves({ successes: 0, failures: 0 }); return next; })}
-                      className="flex-1 py-1 bg-green-900/60 hover:bg-green-800 text-green-300 rounded-lg text-xs cursor-pointer transition-colors">+{n}</button>
-                  ))}
-                </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                <span style={{ background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-text-dim)", fontSize: "0.65rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: 4 }} title="Armor Class">AC {ac}</span>
+                <span style={{ color: "var(--c-text-muted)", fontSize: "0.65rem" }}>Lvl</span>
+                <button onClick={() => { setCharacter(c => ({ ...c, level: Math.max(1, (c.level||1) - 1) })); setUsedSlots(s => { const m = getSpellSlotMaxes(character.class, Math.max(1,(character.level||1)-1)); return Object.fromEntries(Object.entries(s).map(([k,v])=>[k,Math.min(v,m[k]||0)])); }); }} className="c-counter-btn">−</button>
+                <span style={{ fontFamily: "'Cinzel', serif", fontSize: "0.85rem", color: "var(--c-text)", minWidth: "1.25rem", textAlign: "center" }}>{character.level || 1}</span>
+                <button onClick={() => setCharacter(c => ({ ...c, level: Math.min(20, (c.level||1) + 1) }))} className="c-counter-btn">+</button>
               </div>
+            </div>
 
-              {/* Death Saves — only at 0 HP */}
-              {currentHp === 0 && (
-                <div className="mb-3 bg-black rounded-xl p-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-red-400 text-xs font-semibold">💀 Death Saves</span>
-                    <div className="flex gap-2 items-center">
-                      <button onClick={() => {
-                        const roll = rollDie(20);
-                        if (roll === 20) { setCurrentHp(1); setDeathSaves({ successes: 0, failures: 0 }); }
-                        else if (roll === 1) setDeathSaves(d => ({ ...d, failures: Math.min(3, d.failures + 2) }));
-                        else if (roll >= 10) setDeathSaves(d => ({ ...d, successes: Math.min(3, d.successes + 1) }));
-                        else setDeathSaves(d => ({ ...d, failures: Math.min(3, d.failures + 1) }));
-                      }} className="px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 text-white rounded text-xs cursor-pointer">🎲 Roll</button>
-                      <button onClick={() => setDeathSaves({ successes: 0, failures: 0 })} className="text-zinc-600 hover:text-zinc-400 text-xs cursor-pointer">Reset</button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                      <span className="text-green-400 text-xs">✓</span>
-                      {[0,1,2].map(i => <div key={i} onClick={() => setDeathSaves(d => ({ ...d, successes: d.successes === i+1 ? i : i+1 }))} className={`w-4 h-4 rounded-full border cursor-pointer ${i < deathSaves.successes ? "bg-green-500 border-green-400" : "bg-zinc-900 border-zinc-700"}`} />)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-red-400 text-xs">✗</span>
-                      {[0,1,2].map(i => <div key={i} onClick={() => setDeathSaves(d => ({ ...d, failures: d.failures === i+1 ? i : i+1 }))} className={`w-4 h-4 rounded-full border cursor-pointer ${i < deathSaves.failures ? "bg-red-500 border-red-400" : "bg-zinc-900 border-zinc-700"}`} />)}
-                    </div>
-                    {deathSaves.successes >= 3 && <span className="text-green-400 text-xs">Stable!</span>}
-                    {deathSaves.failures >= 3 && <span className="text-red-400 text-xs">Dead</span>}
-                  </div>
-                </div>
-              )}
-
-              {/* Stats */}
-              <div className="grid grid-cols-6 gap-1 mb-3">
-                {Object.entries(character.stats).map(([s, v]) => (
-                  <div key={s} className="bg-black rounded-xl p-1.5 text-center">
-                    <p className="text-zinc-600 text-xs">{s}</p>
-                    <p className="text-white font-bold">{v}</p>
-                    <p className="text-amber-500 text-xs">{modifier(v)}</p>
-                  </div>
+            {/* HP Bar */}
+            <div style={{ marginBottom: "0.75rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem" }}>
+                <span style={{ fontSize: "0.6rem", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--c-text-muted)" }}>HP</span>
+                <span style={{ fontSize: "0.7rem", fontWeight: 700, color: currentHp === 0 ? "var(--c-red-bright)" : "var(--c-text)" }}>{currentHp} / {character.hp}</span>
+              </div>
+              <div style={{ height: 4, background: "var(--c-bg)", borderRadius: 2, overflow: "hidden", marginBottom: "0.5rem" }}>
+                <div style={{ height: "100%", borderRadius: 2, transition: "width 0.3s", background: currentHp / character.hp > 0.5 ? "#3a9a4a" : currentHp / character.hp > 0.25 ? "#c8883a" : "var(--c-red-bright)", width: `${Math.max(0, (currentHp / character.hp) * 100)}%` }} />
+              </div>
+              <div style={{ display: "flex", gap: "0.3rem" }}>
+                {[1, 5, 10].map(n => (
+                  <button key={`d${n}`} onClick={() => setCurrentHp(h => Math.max(0, h - n))}
+                    style={{ flex: 1, padding: "0.2rem", background: "rgba(155,48,48,0.3)", border: "1px solid rgba(155,48,48,0.4)", color: "#e87070", borderRadius: 4, fontSize: "0.7rem", cursor: "pointer" }}>−{n}</button>
+                ))}
+                <div style={{ width: 1, background: "var(--c-border)", margin: "0 0.1rem" }} />
+                {[1, 5, 10].map(n => (
+                  <button key={`h${n}`} onClick={() => setCurrentHp(h => { const next = Math.min(character.hp, h + n); if (next > 0) setDeathSaves({ successes: 0, failures: 0 }); return next; })}
+                    style={{ flex: 1, padding: "0.2rem", background: "rgba(40,100,50,0.3)", border: "1px solid rgba(40,100,50,0.4)", color: "#4ab060", borderRadius: 4, fontSize: "0.7rem", cursor: "pointer" }}>+{n}</button>
                 ))}
               </div>
+            </div>
 
-              {/* Spell Slots */}
-              {isSpellcaster && Object.keys(slotMaxes).length > 0 && (
-                <div className="mb-3">
-                  <p className="text-zinc-500 text-xs mb-1.5 font-semibold">Spell Slots</p>
-                  <div className="space-y-1">
-                    {Object.entries(slotMaxes).map(([lvl, max]) => {
-                      const used = usedSlots[lvl] || 0;
-                      return (
-                        <div key={lvl} className="flex items-center gap-2">
-                          <span className="text-zinc-600 text-xs w-6">{ORDINALS[lvl-1]}</span>
-                          <div className="flex gap-1">
-                            {Array.from({ length: max }).map((_, i) => (
-                              <button key={i} onClick={() => setUsedSlots(s => ({ ...s, [lvl]: s[lvl] === i+1 ? i : i+1 }))}
-                                className={`w-4 h-4 rounded-full border cursor-pointer transition-colors ${i < used ? "bg-amber-500 border-amber-400" : "bg-black border-zinc-700 hover:border-amber-600"}`} />
-                            ))}
-                          </div>
-                          <span className="text-zinc-700 text-xs">{max - used}/{max}</span>
-                        </div>
-                      );
-                    })}
+            {/* Death Saves — only at 0 HP */}
+            {currentHp === 0 && (
+              <div style={{ marginBottom: "0.75rem", background: "var(--c-bg)", border: "1px solid rgba(155,48,48,0.4)", borderRadius: 6, padding: "0.5rem 0.65rem" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem" }}>
+                  <span style={{ color: "var(--c-red-bright)", fontSize: "0.7rem", fontWeight: 600 }}>💀 Death Saves</span>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                    <button onClick={() => {
+                      const roll = rollDie(20);
+                      if (roll === 20) { setCurrentHp(1); setDeathSaves({ successes: 0, failures: 0 }); }
+                      else if (roll === 1) setDeathSaves(d => ({ ...d, failures: Math.min(3, d.failures + 2) }));
+                      else if (roll >= 10) setDeathSaves(d => ({ ...d, successes: Math.min(3, d.successes + 1) }));
+                      else setDeathSaves(d => ({ ...d, failures: Math.min(3, d.failures + 1) }));
+                    }} style={{ padding: "0.15rem 0.5rem", background: "var(--c-surface2)", border: "1px solid var(--c-border)", color: "var(--c-text)", borderRadius: 3, fontSize: "0.65rem", cursor: "pointer" }}>🎲 Roll</button>
+                    <button onClick={() => setDeathSaves({ successes: 0, failures: 0 })} style={{ color: "var(--c-text-muted)", fontSize: "0.65rem", cursor: "pointer", background: "none", border: "none" }}>Reset</button>
                   </div>
-                  <button onClick={() => setUsedSlots({})} className="mt-1.5 text-xs text-zinc-700 hover:text-zinc-400 cursor-pointer">Long rest (restore all)</button>
                 </div>
-              )}
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span style={{ color: "#4ab060", fontSize: "0.65rem" }}>✓</span>
+                    {[0,1,2].map(i => <div key={i} onClick={() => setDeathSaves(d => ({ ...d, successes: d.successes === i+1 ? i : i+1 }))} style={{ width: 14, height: 14, borderRadius: "50%", border: `1px solid ${i < deathSaves.successes ? "#3a9a4a" : "var(--c-border)"}`, background: i < deathSaves.successes ? "#3a9a4a" : "var(--c-bg)", cursor: "pointer" }} />)}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                    <span style={{ color: "var(--c-red-bright)", fontSize: "0.65rem" }}>✗</span>
+                    {[0,1,2].map(i => <div key={i} onClick={() => setDeathSaves(d => ({ ...d, failures: d.failures === i+1 ? i : i+1 }))} style={{ width: 14, height: 14, borderRadius: "50%", border: `1px solid ${i < deathSaves.failures ? "var(--c-red-bright)" : "var(--c-border)"}`, background: i < deathSaves.failures ? "var(--c-red-bright)" : "var(--c-bg)", cursor: "pointer" }} />)}
+                  </div>
+                  {deathSaves.successes >= 3 && <span style={{ color: "#4ab060", fontSize: "0.65rem" }}>Stable!</span>}
+                  {deathSaves.failures >= 3 && <span style={{ color: "var(--c-red-bright)", fontSize: "0.65rem" }}>Dead</span>}
+                </div>
+              </div>
+            )}
 
-              {/* Conditions */}
-              <div>
-                <p className="text-zinc-500 text-xs mb-1.5 font-semibold">Conditions</p>
-                <div className="flex flex-wrap gap-1">
-                  {CONDITIONS.map(c => {
-                    const active = conditions.includes(c);
+            {/* Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "0.35rem", marginBottom: "0.75rem" }}>
+              {Object.entries(character.stats).map(([s, v]) => (
+                <div key={s} className="c-stat-box">
+                  <span className="c-stat-lbl">{s}</span>
+                  <span className="c-stat-val" style={{ fontSize: "1.1rem" }}>{v}</span>
+                  <span className="c-stat-mod">{modifier(v)}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Spell Slots */}
+            {isSpellcaster && Object.keys(slotMaxes).length > 0 && (
+              <div style={{ marginBottom: "0.75rem" }}>
+                <p className="c-panel-title">Spell Slots</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+                  {Object.entries(slotMaxes).map(([lvl, max]) => {
+                    const used = usedSlots[lvl] || 0;
                     return (
-                      <button key={c} onClick={() => setConditions(cs => active ? cs.filter(x => x !== c) : [...cs, c])}
-                        className={`text-xs px-1.5 py-0.5 rounded-lg border cursor-pointer transition-colors ${active ? "bg-red-900/60 border-red-700 text-red-300" : "bg-black border-zinc-800 text-zinc-600 hover:border-zinc-600"}`}>
-                        {c}
-                      </button>
+                      <div key={lvl} style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <span style={{ fontSize: "0.6rem", color: "var(--c-text-muted)", width: "1.5rem" }}>{ORDINALS[lvl-1]}</span>
+                        <div style={{ display: "flex", gap: "0.25rem" }}>
+                          {Array.from({ length: max }).map((_, i) => (
+                            <button key={i} onClick={() => setUsedSlots(s => ({ ...s, [lvl]: s[lvl] === i+1 ? i : i+1 }))}
+                              style={{ width: 14, height: 14, borderRadius: "50%", border: `1px solid ${i < used ? "var(--c-accent-dim)" : "var(--c-border)"}`, background: i < used ? "var(--c-accent)" : "var(--c-bg)", cursor: "pointer", transition: "all 0.15s" }} />
+                          ))}
+                        </div>
+                        <span style={{ fontSize: "0.65rem", color: "var(--c-text-muted)" }}>{max - used}/{max}</span>
+                      </div>
                     );
                   })}
                 </div>
+                <button onClick={() => setUsedSlots({})} style={{ marginTop: "0.4rem", fontSize: "0.65rem", color: "var(--c-text-muted)", cursor: "pointer", background: "none", border: "none", padding: 0 }}>Long rest (restore all)</button>
+              </div>
+            )}
+
+            {/* Conditions */}
+            <div>
+              <p className="c-panel-title">Conditions</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+                {CONDITIONS.map(c => {
+                  const active = conditions.includes(c);
+                  return (
+                    <button key={c} onClick={() => setConditions(cs => active ? cs.filter(x => x !== c) : [...cs, c])}
+                      style={{ fontSize: "0.65rem", padding: "0.15rem 0.5rem", borderRadius: 4, border: `1px solid ${active ? "rgba(155,48,48,0.5)" : "var(--c-border)"}`, background: active ? "rgba(155,48,48,0.25)" : "var(--c-bg)", color: active ? "#e87070" : "var(--c-text-muted)", cursor: "pointer", transition: "all 0.15s" }}>
+                      {c}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1636,132 +1594,122 @@ export default function App() {
 
       {/* Inventory Panel */}
       {activeTab === "inventory" && (
-        <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "260px", overflowY: "auto" }}>
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-semibold text-sm">Inventory</p>
-              <div className="flex items-center gap-1">
-                {[-10,-1,1,10].map(n => (
-                  <button key={n} onClick={() => setGold(g => Math.max(0, g + n))}
-                    className={`px-1.5 py-0.5 rounded-lg text-xs cursor-pointer transition-colors ${n < 0 ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300" : "bg-amber-900/40 hover:bg-amber-900/70 text-amber-400"}`}>
-                    {n > 0 ? `+${n}` : n}
+        <div className="c-panel" style={{ maxHeight: "280px" }}>
+          {/* Header: title + gold */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.65rem" }}>
+            <p className="c-panel-title" style={{ margin: 0 }}>Inventory</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
+              {[-10,-1,1,10].map(n => (
+                <button key={n} onClick={() => setGold(g => Math.max(0, g + n))}
+                  style={{ padding: "0.15rem 0.4rem", borderRadius: 3, fontSize: "0.65rem", cursor: "pointer", background: n < 0 ? "var(--c-surface2)" : "rgba(200,169,110,0.12)", border: `1px solid ${n < 0 ? "var(--c-border)" : "var(--c-accent-dim)"}`, color: n < 0 ? "var(--c-text-dim)" : "var(--c-accent)" }}>
+                  {n > 0 ? `+${n}` : n}
+                </button>
+              ))}
+              <span style={{ color: "var(--c-accent)", fontSize: "0.85rem", fontWeight: 600, marginLeft: "0.25rem" }}>🪙 {gold}</span>
+            </div>
+          </div>
+          {inventory.length === 0 && <p style={{ color: "var(--c-text-muted)", fontSize: "0.85rem", textAlign: "center", padding: "0.5rem 0" }}>Your pack is empty.</p>}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+            {inventory.map(item => {
+              const isEquipped = item.id === equippedWeaponId;
+              return (
+                <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderRadius: 4, padding: "0.45rem 0.6rem", background: isEquipped ? "rgba(200,169,110,0.06)" : "var(--c-bg)", border: `1px solid ${isEquipped ? "var(--c-accent-dim)" : "var(--c-border)"}` }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", flexWrap: "wrap" }}>
+                      <span style={{ color: "var(--c-text)", fontSize: "0.85rem", fontWeight: 500 }}>{item.name}</span>
+                      <span style={{ fontSize: "0.6rem", color: "var(--c-text-muted)" }}>{item.type}</span>
+                      {isEquipped && <span style={{ fontSize: "0.55rem", padding: "0.1rem 0.4rem", borderRadius: 10, background: "rgba(200,169,110,0.1)", border: "1px solid var(--c-accent-dim)", color: "var(--c-accent)" }}>Equipped</span>}
+                    </div>
+                    <p style={{ margin: 0, color: "var(--c-text-muted)", fontSize: "0.65rem" }}>{item.desc} · {item.weight} lb</p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", flexShrink: 0 }}>
+                    {item.type === "Weapon" && (
+                      <button onClick={() => setEquippedWeaponId(isEquipped ? null : item.id)}
+                        style={{ fontSize: "0.6rem", padding: "0.15rem 0.4rem", borderRadius: 3, fontWeight: 600, cursor: "pointer", background: isEquipped ? "var(--c-surface2)" : "rgba(155,48,48,0.3)", border: `1px solid ${isEquipped ? "var(--c-border)" : "rgba(155,48,48,0.5)"}`, color: isEquipped ? "var(--c-text-dim)" : "#e87070" }}>
+                        {isEquipped ? "Unequip" : "Equip"}
+                      </button>
+                    )}
+                    {item.qty > 1 || item.type === "Consumable" ? (
+                      <>
+                        <button onClick={() => changeQty(item.id, -1)} className="c-counter-btn">−</button>
+                        <span style={{ color: "var(--c-text)", fontSize: "0.7rem", minWidth: "1rem", textAlign: "center" }}>{item.qty}</span>
+                        <button onClick={() => changeQty(item.id, 1)} className="c-counter-btn">+</button>
+                      </>
+                    ) : (
+                      <span style={{ color: "var(--c-text-muted)", fontSize: "0.65rem", width: "1.5rem", textAlign: "center" }}>×1</span>
+                    )}
+                    <button onClick={() => { if (isEquipped) setEquippedWeaponId(null); removeItem(item.id); }}
+                      style={{ width: 18, height: 18, background: "rgba(155,48,48,0.25)", border: "1px solid rgba(155,48,48,0.4)", borderRadius: 3, fontSize: "0.6rem", color: "#e87070", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "0.15rem" }}>✕</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--c-border)", display: "flex", justifyContent: "space-between", fontSize: "0.65rem", color: "var(--c-text-muted)" }}>
+            <span>{inventory.length} items</span>
+            <span>{inventory.reduce((a, i) => a + i.weight * i.qty, 0).toFixed(1)} lb total</span>
+          </div>
+          {/* Add item with autocomplete */}
+          <div style={{ marginTop: "0.5rem", paddingTop: "0.5rem", borderTop: "1px solid var(--c-border)" }}>
+            {itemSuggestions.length > 0 && (
+              <div style={{ marginBottom: "0.3rem", borderRadius: 4, border: "1px solid var(--c-border)", overflow: "hidden" }}>
+                {itemSuggestions.map(item => (
+                  <button key={item.name} onClick={() => { setNewItemName(item.name); setNewItemType(item.type); setSelectedDbItem(item); setItemSuggestions([]); }}
+                    style={{ width: "100%", display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.35rem 0.6rem", background: "var(--c-surface2)", textAlign: "left", cursor: "pointer", borderBottom: "1px solid var(--c-border)" }}>
+                    <span style={{ fontSize: "0.6rem", fontWeight: 600, width: "3.5rem", flexShrink: 0, color: "var(--c-text-muted)" }}>{item.type}</span>
+                    <span style={{ color: "var(--c-text)", fontSize: "0.7rem", fontWeight: 500, flexShrink: 0 }}>{item.name}</span>
+                    <span style={{ color: "var(--c-text-muted)", fontSize: "0.65rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.desc}</span>
+                    <span style={{ color: "var(--c-text-muted)", fontSize: "0.6rem", flexShrink: 0, marginLeft: "auto" }}>{item.weight} lb</span>
                   </button>
                 ))}
-                <span className="text-amber-400 text-sm font-semibold ml-1">🪙 {gold}</span>
               </div>
-            </div>
-            {inventory.length === 0 && <p className="text-zinc-600 text-sm text-center py-2">Your pack is empty.</p>}
-            <div className="space-y-1">
-              {inventory.map(item => {
-                const isEquipped = item.id === equippedWeaponId;
-                return (
-                  <div key={item.id} className={`flex items-center gap-2 rounded-xl p-2 ${isEquipped ? "bg-red-950/30 border border-red-900/50" : "bg-black"}`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-white text-sm font-medium truncate">{item.name}</span>
-                        <span className={`text-xs ${TYPE_COLORS[item.type] || "text-zinc-400"}`}>{item.type}</span>
-                        {isEquipped && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-950 border border-amber-800 text-amber-400">Equipped</span>}
-                      </div>
-                      <p className="text-zinc-600 text-xs truncate">{item.desc} · {item.weight} lb</p>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      {item.type === "Weapon" && (
-                        <button
-                          onClick={() => setEquippedWeaponId(isEquipped ? null : item.id)}
-                          className={`text-[10px] px-2 py-1 rounded-lg font-semibold cursor-pointer transition-colors ${isEquipped ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300" : "bg-red-900/60 hover:bg-red-800 text-red-300"}`}
-                        >
-                          {isEquipped ? "Unequip" : "Equip"}
-                        </button>
-                      )}
-                      {item.qty > 1 || item.type === "Consumable" ? (
-                        <>
-                          <button onClick={() => changeQty(item.id, -1)} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs text-white cursor-pointer flex items-center justify-center">−</button>
-                          <span className="text-white text-xs w-4 text-center">{item.qty}</span>
-                          <button onClick={() => changeQty(item.id, 1)} className="w-5 h-5 bg-zinc-800 hover:bg-zinc-700 rounded text-xs text-white cursor-pointer flex items-center justify-center">+</button>
-                        </>
-                      ) : (
-                        <span className="text-zinc-700 text-xs w-6 text-center">×1</span>
-                      )}
-                      <button onClick={() => { if (isEquipped) setEquippedWeaponId(null); removeItem(item.id); }} className="w-5 h-5 bg-red-900/50 hover:bg-red-800 rounded text-xs text-red-400 cursor-pointer flex items-center justify-center ml-1">✕</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-2 pt-2 border-t border-zinc-800 flex justify-between text-xs text-zinc-600">
-              <span>{inventory.length} items</span>
-              <span>{inventory.reduce((a, i) => a + i.weight * i.qty, 0).toFixed(1)} lb total</span>
-            </div>
-            {/* Add item with autocomplete */}
-            <div className="mt-2 pt-2 border-t border-zinc-800">
-              {itemSuggestions.length > 0 && (
-                <div className="mb-1 rounded-lg border border-zinc-800 overflow-hidden">
-                  {itemSuggestions.map(item => (
-                    <button
-                      key={item.name}
-                      onClick={() => {
-                        setNewItemName(item.name);
-                        setNewItemType(item.type);
-                        setSelectedDbItem(item);
-                        setItemSuggestions([]);
-                      }}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 bg-zinc-900 hover:bg-zinc-800 text-left transition-colors cursor-pointer border-b border-zinc-800 last:border-0"
-                    >
-                      <span className={`text-xs font-medium w-14 flex-shrink-0 ${TYPE_COLORS[item.type]}`}>{item.type}</span>
-                      <span className="text-white text-xs font-medium flex-shrink-0">{item.name}</span>
-                      <span className="text-zinc-600 text-xs truncate">{item.desc}</span>
-                      <span className="text-zinc-700 text-xs flex-shrink-0 ml-auto">{item.weight} lb</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {selectedDbItem && (
-                <div className="mb-1 px-2 py-1 bg-amber-900/20 border border-amber-900/40 rounded-lg">
-                  <p className="text-amber-400 text-xs">{selectedDbItem.desc} · {selectedDbItem.weight} lb</p>
-                </div>
-              )}
-              <div className="flex gap-1">
-                <input
-                  className="bg-black border border-zinc-800 rounded-lg px-2 py-1 text-white placeholder-zinc-700 text-xs focus:outline-none focus:border-amber-500 flex-1"
-                  placeholder="Search or add item…"
-                  value={newItemName}
-                  onChange={e => {
-                    const val = e.target.value;
-                    setNewItemName(val);
-                    setSelectedDbItem(null);
-                    if (val.trim().length >= 2) {
-                      const q = val.toLowerCase();
-                      setItemSuggestions(ITEM_DB.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6));
-                    } else {
-                      setItemSuggestions([]);
-                    }
-                  }}
-                  onKeyDown={e => {
-                    if (e.key === "Enter" && newItemName.trim()) {
-                      const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
-                      setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
-                      setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
-                    }
-                    if (e.key === "Escape") setItemSuggestions([]);
-                  }}
-                />
-                {!selectedDbItem && (
-                  <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
-                    className="bg-black border border-zinc-800 rounded-lg px-1 py-1 text-white text-xs focus:outline-none focus:border-amber-500 cursor-pointer">
-                    {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
-                  </select>
-                )}
-                <button
-                  onClick={() => {
-                    if (!newItemName.trim()) return;
+            )}
+            {selectedDbItem && (
+              <div style={{ marginBottom: "0.3rem", padding: "0.25rem 0.5rem", background: "rgba(200,169,110,0.06)", border: "1px solid var(--c-accent-dim)", borderRadius: 4 }}>
+                <p style={{ margin: 0, color: "var(--c-accent)", fontSize: "0.65rem" }}>{selectedDbItem.desc} · {selectedDbItem.weight} lb</p>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: "0.3rem" }}>
+              <input
+                style={{ flex: 1, background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 4, padding: "0.3rem 0.5rem", color: "var(--c-text)", fontSize: "0.75rem", outline: "none" }}
+                placeholder="Search or add item…"
+                value={newItemName}
+                onChange={e => {
+                  const val = e.target.value;
+                  setNewItemName(val);
+                  setSelectedDbItem(null);
+                  if (val.trim().length >= 2) {
+                    const q = val.toLowerCase();
+                    setItemSuggestions(ITEM_DB.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6));
+                  } else {
+                    setItemSuggestions([]);
+                  }
+                }}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && newItemName.trim()) {
                     const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
                     setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
                     setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
-                  }}
-                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded-lg text-xs cursor-pointer transition-colors font-bold flex-shrink-0">
-                  Add
-                </button>
-              </div>
+                  }
+                  if (e.key === "Escape") setItemSuggestions([]);
+                }}
+              />
+              {!selectedDbItem && (
+                <select value={newItemType} onChange={e => setNewItemType(e.target.value)}
+                  style={{ background: "var(--c-bg)", border: "1px solid var(--c-border)", borderRadius: 4, padding: "0.3rem 0.25rem", color: "var(--c-text)", fontSize: "0.7rem", outline: "none", cursor: "pointer" }}>
+                  {Object.keys(TYPE_COLORS).map(t => <option key={t}>{t}</option>)}
+                </select>
+              )}
+              <button
+                onClick={() => {
+                  if (!newItemName.trim()) return;
+                  const base = selectedDbItem || { name: newItemName.trim(), type: newItemType, weight: 0, desc: "" };
+                  setInventory(inv => [...inv, { ...base, id: Date.now(), qty: 1 }]);
+                  setNewItemName(""); setSelectedDbItem(null); setItemSuggestions([]);
+                }}
+                style={{ padding: "0.3rem 0.6rem", background: "var(--c-accent)", color: "var(--c-bg)", borderRadius: 4, fontSize: "0.7rem", fontWeight: 700, cursor: "pointer", border: "none", flexShrink: 0 }}>
+                Add
+              </button>
             </div>
           </div>
         </div>
@@ -1769,10 +1717,10 @@ export default function App() {
 
       {/* Notes Panel */}
       {activeTab === "notes" && (
-        <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "260px" }}>
+        <div className="c-panel" style={{ maxHeight: "240px", padding: 0 }}>
           <textarea
-            className="w-full bg-black text-zinc-200 text-sm p-4 resize-none focus:outline-none placeholder-zinc-800 font-serif"
-            style={{ height: "180px" }}
+            className="c-textarea"
+            style={{ height: "200px", border: "none", borderRadius: 0, background: "var(--c-surface)" }}
             placeholder="Quest notes, NPC names, clues, loot to track…"
             value={notes}
             onChange={e => setNotes(e.target.value)}
@@ -1804,11 +1752,11 @@ export default function App() {
       )}
 
       {/* Input Bar */}
-      <div className="flex-shrink-0 bg-black border-t border-zinc-900 px-4 pt-3 pb-4">
-        <div className="flex gap-2 mb-2 items-start">
+      <div className="c-input-area">
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem", alignItems: "flex-start" }}>
           <textarea
             ref={inputRef}
-            className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-white text-base font-serif placeholder-zinc-700 focus:outline-none focus:border-amber-500 resize-none transition-colors"
+            className="c-textarea"
             rows={2}
             placeholder="What do you do?"
             value={userInput}
@@ -1822,37 +1770,28 @@ export default function App() {
               const rollPart = `[Rolled d20: **${roll}**${label}]`;
               const combined = userInput.trim() ? `${userInput.trim()} ${rollPart}` : rollPart;
               setUserInput("");
-              sendMessage(combined, true); // skipEngine — dice already rolled
+              sendMessage(combined, true);
             }}
             disabled={loading}
             title="Quick roll d20"
-            className="w-10 h-10 mt-1 rounded-xl bg-zinc-900 hover:bg-amber-500 hover:text-black border border-zinc-800 text-base flex items-center justify-center cursor-pointer transition-colors disabled:opacity-30 flex-shrink-0"
+            className="c-d20-btn"
+            style={{ marginTop: "2px" }}
           >🎲</button>
         </div>
-        <div className="flex gap-2 mb-2">
-          <button
-            onClick={() => sendMessage()}
-            disabled={loading || !userInput.trim()}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-2xl font-bold text-xs tracking-widest disabled:opacity-30 cursor-pointer transition-colors">
-            ✏️ TAKE A TURN
+        <div className="c-action-row" style={{ marginBottom: "0.5rem" }}>
+          <button onClick={() => sendMessage()} disabled={loading || !userInput.trim()} className="c-action-btn">
+            ✏️ Take a Turn
           </button>
-          <button
-            onClick={() => sendMessage("Continue the story.", true)}
-            disabled={loading}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-2xl font-bold text-xs tracking-widest disabled:opacity-30 cursor-pointer transition-colors">
-            ✦ CONTINUE
+          <button onClick={() => sendMessage("Continue the story.", true)} disabled={loading} className="c-action-btn">
+            ✦ Continue
           </button>
-          <button
-            onClick={() => { const last = [...messages].reverse().find(m => m.role === "player" && !m.isRoll); if (last) sendMessage(last.text); }}
-            disabled={loading}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white rounded-2xl font-bold text-xs tracking-widest disabled:opacity-30 cursor-pointer transition-colors">
-            ↺ RETRY
+          <button onClick={() => { const last = [...messages].reverse().find(m => m.role === "player" && !m.isRoll); if (last) sendMessage(last.text); }} disabled={loading} className="c-action-btn">
+            ↺ Retry
           </button>
         </div>
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="c-quick-actions">
           {QUICK_ACTIONS.map(a => (
-            <button key={a} onClick={() => setUserInput(a)}
-              className="text-xs text-zinc-600 border border-zinc-900 rounded-full px-3 py-1 hover:border-zinc-700 hover:text-zinc-400 cursor-pointer transition-colors">{a}</button>
+            <button key={a} onClick={() => setUserInput(a)} className="c-quick-btn">{a}</button>
           ))}
         </div>
       </div>

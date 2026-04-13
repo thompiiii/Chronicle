@@ -129,6 +129,23 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-13 — Full UI Retheme (Chronicle CSS Layer)
+- `chronicle-dnd/src/index.css`: Complete replacement — removed Vite template defaults, added `@import "tailwindcss"` + Google Fonts (Cinzel + Crimson Pro), added `:root` CSS variables (`--c-bg`, `--c-surface`, `--c-accent`, etc.), added `.chronicle-app` grain overlay, and defined full Chronicle CSS class set
+- `chronicle-dnd/src/App.jsx`: All screens, panels, and interactive components updated from Tailwind zinc/black utility classes to Chronicle CSS variables and semantic classes. Changes by section:
+  - **Home screen**: `.c-home`, `.c-title`, `.c-subtitle`, `.c-home-form`, `.c-btn-primary`, `.c-btn-ghost`, `.c-field-input`, `.c-divider`, `.c-join-row`
+  - **Character creation** (steps 0–4): `.c-character`, `.c-step-header`, `.c-step-prompt`, `.c-list-item`, `.c-card`, `.c-stat-grid`, `.c-stat-box`, `.c-bg-grid`, `.c-bg-card`
+  - **Game header**: `.c-game`, `.c-game-header`, `.c-back-btn`, `.c-game-wordmark`, `.c-icon-btn`, `.c-hp-badge`
+  - **Chat area**: `.c-chat`, `.c-msg-dm` / `.c-msg-dm-label` / `.c-msg-dm-text`, `.c-msg-player` / `.c-msg-player-bubble`
+  - **Tab panels** (Dice/Sheet/Inventory/Notes): `.c-panel` with Chronicle inline style overrides; Dice → `.c-dice-controls`, `.c-die-btn`; Sheet → `.c-stat-box`, `.c-panel-title`; Inventory → inline CSS vars; Notes → `.c-textarea`
+  - **Input bar**: `.c-input-area`, `.c-textarea`, `.c-d20-btn`, `.c-action-row`, `.c-action-btn`, `.c-quick-actions`, `.c-quick-btn`
+  - **EncounterOverlay**: `.c-encounter-panel`, `.c-encounter-btn` + variants (attack/heavy/defend/flee/death) with colour variants in CSS
+  - **EncounterRecap**: `.c-encounter-panel`, `.c-loot-gold-card`, `.c-loot-item-card`, `.c-continue-btn`
+  - **LiveCombatView** + **CombatTracker**: `.c-panel` wrapper, inline CSS variable styles
+  - **SavedCampaignsScreen**: `.chronicle-app` wrapper, `.c-back-btn`, inline Chronicle styles
+- CSS additions in `index.css`: `.c-encounter-btn-*` colour variants, `.c-hp-track` / `.c-hp-fill` HP bar classes; `.c-panel` updated to use `border-top` instead of `border-bottom`
+- Typography: Cinzel display font used for labels, tabs, buttons; Crimson Pro for all prose/narration
+- Palette: `--c-bg #0c0c0e`, `--c-accent #c8a96e` (gold), `--c-red #9b3030` — throughout
+
 ### 2026-04-13 — Death Saving Throws (Free-Play Encounters)
 - `encounterEngine.js`: added `dying: false` and `deathSaves: { successes: 0, failures: 0 }` to encounter state shape (`startEncounter`)
 - `resolveEncounterRound`: when `encounter.dying` or `actionHint === "deathsave"`, enters death save path instead of normal combat:
