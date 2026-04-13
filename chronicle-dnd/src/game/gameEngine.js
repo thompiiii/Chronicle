@@ -37,6 +37,10 @@ const INTENT_PATTERNS = [
     regex: /\b(cast|spell|magic|incant|conjure|invoke|channel|use magic|activate)\b/i,
   },
   {
+    type: "defend",
+    regex: /\b(defend|block|brace|parry|guard)\b/i,
+  },
+  {
     type: "flee",
     regex: /\b(run|flee|escape|retreat|bolt|dash away|sprint away|get out|leave quickly)\b/i,
   },

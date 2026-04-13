@@ -19,7 +19,7 @@ const OUTCOME_DIRECTION = {
 };
 
 // Build the structured turn description sent to Claude.
-function buildTurnMessage(turnResult) {
+function buildTurnMessage(turnResult, encounter) {
   const { action, intent, rawRoll, modifier, total, dc, outcome, isCrit, isFumble, damage } = turnResult;
 
   const modStr   = modifier > 0 ? `+${modifier}` : modifier < 0 ? `${modifier}` : "";
@@ -28,7 +28,6 @@ function buildTurnMessage(turnResult) {
   const lines = [`Player action: "${action}"`, `Action type: ${intent}`];
 
   if (outcome) {
-    // Contested action — dice were rolled, outcome is decided
     lines.push(
       `Dice: d20 rolled ${rawRoll}${modStr}${totalStr} vs DC ${dc}`,
       `Outcome: ${outcome.toUpperCase()}${isCrit ? " (NATURAL 20)" : ""}${isFumble ? " (NATURAL 1)" : ""}`,
@@ -42,8 +41,28 @@ function buildTurnMessage(turnResult) {
     }
     lines.push("", OUTCOME_DIRECTION[outcome]);
   } else {
-    // No roll needed — free narration action (exploring, moving, observing)
     lines.push("No dice roll required. Narrate this action freely and atmospherically.");
+  }
+
+  // ── Active encounter context ──────────────────────────────────────────────
+  if (encounter) {
+    const { enemy, lastCombatLog, battleStats } = encounter;
+    lines.push(
+      "",
+      `Active combat: ${enemy.name} (${enemy.hp}/${enemy.maxHp} HP remaining)`,
+      `Round ${battleStats.rounds}`,
+    );
+    if (lastCombatLog?.length) {
+      lines.push(`This round: ${lastCombatLog.join(" · ")}`);
+    }
+    lines.push(
+      "",
+      "Narrate this combat exchange in 1–2 vivid sentences.",
+      "Describe the physical action and its impact — no numbers, no mechanics.",
+      enemy.hp <= 0
+        ? "The enemy has been defeated — make the killing blow feel climactic."
+        : "The fight continues — build tension.",
+    );
   }
 
   return lines.join("\n");
@@ -92,7 +111,7 @@ export async function getNarration(arg1, arg2, callbacks = {}) {
   const turnResult = arg1;
   const gameState  = arg2;
   const { onChunk, onError } = callbacks;
-  const { character, messages = [] } = gameState;
+  const { character, messages = [], encounter } = gameState;
 
   // Include the last 2 DM messages as scene context so Claude knows what's happening
   const contextMessages = messages
@@ -103,7 +122,7 @@ export async function getNarration(arg1, arg2, callbacks = {}) {
   const payload = {
     messages: [
       ...contextMessages,
-      { role: "player", text: buildTurnMessage(turnResult) },
+      { role: "player", text: buildTurnMessage(turnResult, encounter) },
     ],
     character: {
       name:       character?.name,

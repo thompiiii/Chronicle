@@ -129,6 +129,14 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-13 — Free-Play Encounter System
+- New file `encounterEngine.js`: tiered enemy table (Trivial/Standard/Elite/Boss), `lookupEnemy(text)` keyword match, `startEncounter(enemy)`, `resolveEncounterRound(encounter, turnResult, playerHp, actionHint)`
+- Auto-detect: attack intent in free-play triggers combat. Lookup table checked first; AI generation fallback (`generateEnemyAI`) for unknown enemies
+- Full round resolution: player turn (attack/heavy/defend/flee), enemy counterattack, damage, HP tracking
+- `gameEngine.js`: added `defend` to `INTENT_PATTERNS`
+- `aiClient.js`: `buildTurnMessage` now accepts `encounter` context; narration prompt includes enemy HP, round number, this-round log lines, contextual direction (kill blow vs ongoing fight)
+- `App.jsx`: `encounterState` + `pendingRecap` state; `EncounterOverlay` component (enemy+player HP bars, dice display, last 3 combat log lines, Attack/Heavy/Defend/Flee buttons); `EncounterRecap` component (outcome banner, dealt/taken/rounds stats, Continue button); combat overlay sits above input bar, disappears when dismissed
+
 ### 2026-04-12 — Restore D&D Item Autocomplete (Free-Play)
 - Restored `itemSuggestions` + `selectedDbItem` state in `App.jsx`
 - "Search or add item…" input shows up to 6 matching items from `ITEM_DB` after 2+ chars typed

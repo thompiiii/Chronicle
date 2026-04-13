@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { processTurn, applyTurnToState, formatRollSummary, shouldRoll } from "./game/gameEngine";
 import { getNarration } from "./game/aiClient";
+import { lookupEnemy, startEncounter, resolveEncounterRound } from "./game/encounterEngine";
 import { createCampaignState } from "./game/campaignEngine";
 import { goblinCaveCampaign } from "./campaigns/goblinCave";
 import CampaignScreen from "./components/CampaignScreen";
@@ -538,6 +539,136 @@ function SavedCampaignsScreen({ onBack, onContinue }) {
   );
 }
 
+// ── Encounter UI components ────────────────────────────────────────────────
+
+function EncounterHpBar({ current, max, color = "bg-green-500" }) {
+  const pct = Math.max(0, Math.min(100, (current / max) * 100));
+  const bar = pct <= 25 ? "bg-red-500" : pct <= 50 ? "bg-amber-500" : color;
+  return (
+    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+      <div className={`h-full rounded-full transition-all duration-500 ${bar}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+function EncounterOverlay({ encounter, playerHp, playerMaxHp, loading, onAttack, onHeavy, onDefend, onFlee }) {
+  const { enemy, lastCombatLog, lastRoll, battleStats } = encounter;
+
+  const playerColor = !lastRoll            ? "text-zinc-400"
+    : lastRoll.isCrit                      ? "text-yellow-300"
+    : lastRoll.isFumble                    ? "text-red-400"
+    : lastRoll.action === "defend"         ? "text-blue-300"
+    : lastRoll.playerHit                   ? "text-green-400"
+    :                                        "text-zinc-500";
+
+  const enemyColor = !lastRoll                         ? "text-zinc-400"
+    : lastRoll.enemyResult === "miss"                  ? "text-zinc-500"
+    : lastRoll.enemyResult === "heavy"                 ? "text-orange-400"
+    :                                                    "text-red-400";
+
+  const btn = "flex-1 flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 active:scale-95 text-xs tracking-wide";
+
+  return (
+    <div className="flex-shrink-0 bg-zinc-950 border-t border-zinc-800 px-4 pt-3 pb-3 flex flex-col gap-2">
+      {/* HP rows */}
+      <div className="flex gap-2">
+        <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">{enemy.tierLabel}</span>
+            <span className="text-[10px] font-mono text-red-400">{enemy.hp}/{enemy.maxHp} HP</span>
+          </div>
+          <p className="text-white text-xs font-semibold leading-none">{enemy.name}</p>
+          <EncounterHpBar current={enemy.hp} max={enemy.maxHp} color="bg-red-500" />
+        </div>
+        <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">You</span>
+            <span className={`text-[10px] font-mono ${playerHp <= Math.ceil(playerMaxHp * 0.25) ? "text-red-400" : "text-green-400"}`}>{playerHp}/{playerMaxHp} HP</span>
+          </div>
+          <p className="text-white text-xs font-semibold leading-none">Round {battleStats.rounds + 1}</p>
+          <EncounterHpBar current={playerHp} max={playerMaxHp} />
+        </div>
+      </div>
+
+      {/* Dice display */}
+      {lastRoll && (
+        <div className="flex gap-2">
+          <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 py-1.5">
+            <span className="text-[10px] text-zinc-500">⚔️ You</span>
+            <span className={`text-2xl font-black leading-none ${playerColor}`}>
+              {lastRoll.action === "defend" ? "—" : lastRoll.playerRoll}
+            </span>
+            <span className={`text-[10px] font-bold ${playerColor}`}>
+              {lastRoll.action === "defend" ? "STANCE" : lastRoll.isCrit ? "CRIT" : lastRoll.isFumble ? "FUMBLE" : lastRoll.playerHit ? "HIT" : "MISS"}
+            </span>
+          </div>
+          <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center gap-2 py-1.5">
+            <span className="text-[10px] text-zinc-500">👺 {enemy.name}</span>
+            <span className={`text-2xl font-black leading-none ${enemyColor}`}>{lastRoll.enemyRoll || "—"}</span>
+            <span className={`text-[10px] font-bold ${enemyColor}`}>
+              {lastRoll.enemyResult === "miss" ? "MISS" : lastRoll.enemyResult === "heavy" ? "HEAVY" : "HIT"}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Last round log */}
+      {lastCombatLog?.length > 0 && (
+        <div className="flex flex-col gap-0.5">
+          {lastCombatLog.slice(-3).map((line, i) => (
+            <p key={i} className={`text-[11px] font-mono ${i === lastCombatLog.slice(-3).length - 1 ? "text-zinc-300" : "text-zinc-600"}`}>{line}</p>
+          ))}
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex gap-1.5">
+        <button onClick={onAttack} disabled={loading} className={`${btn} bg-red-900 hover:bg-red-800 text-white`}>
+          <span className="text-base">⚔️</span>Attack
+        </button>
+        <button onClick={onHeavy} disabled={loading} className={`${btn} bg-orange-900 hover:bg-orange-800 text-white`}>
+          <span className="text-base">💥</span>Heavy
+        </button>
+        <button onClick={onDefend} disabled={loading} className={`${btn} bg-blue-900 hover:bg-blue-800 text-white`}>
+          <span className="text-base">🛡️</span>Defend
+        </button>
+        <button onClick={onFlee} disabled={loading} className={`${btn} bg-zinc-800 hover:bg-zinc-700 text-zinc-300`}>
+          <span className="text-base">🏃</span>Flee
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EncounterRecap({ recap, onDismiss }) {
+  const isVictory = recap.outcome === "victory";
+  const isFled    = recap.outcome === "fled";
+  return (
+    <div className="flex-shrink-0 bg-zinc-950 border-t border-zinc-800 px-4 pt-3 pb-3 flex flex-col gap-2">
+      <div className={`rounded-xl px-4 py-2 flex items-center justify-between border ${
+        isVictory ? "bg-green-950/40 border-green-800" :
+        isFled    ? "bg-zinc-900 border-zinc-700" :
+                    "bg-red-950/40 border-red-900"
+      }`}>
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{isVictory ? "⚔️" : isFled ? "🏃" : "💀"}</span>
+          <span className={`text-sm font-black tracking-widest uppercase ${isVictory ? "text-green-300" : isFled ? "text-zinc-300" : "text-red-400"}`}>
+            {isVictory ? "Victory" : isFled ? "Escaped" : "Defeated"}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] font-mono">
+          <span className="text-red-400">⚔️ {recap.dealt}</span>
+          <span className="text-amber-400">🛡 {recap.taken}</span>
+          <span className="text-zinc-400">↺ {recap.rounds}</span>
+        </div>
+      </div>
+      <button onClick={onDismiss} className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold rounded-xl text-sm transition-colors cursor-pointer">
+        Continue →
+      </button>
+    </div>
+  );
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState("home");
@@ -568,6 +699,8 @@ export default function App() {
   const [conditions, setConditions] = useState([]);
   const [notes, setNotes] = useState("");
   const [deathSaves, setDeathSaves] = useState({ successes: 0, failures: 0 });
+  const [encounterState, setEncounterState] = useState(null);
+  const [pendingRecap, setPendingRecap] = useState(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemType, setNewItemType] = useState("Misc");
   const [itemSuggestions, setItemSuggestions] = useState([]);
@@ -685,7 +818,44 @@ export default function App() {
     sendMessage(combined, true); // skipEngine — dice already rolled by the player
   }
 
-  async function sendMessage(overrideText, skipEngine = false) {
+  async function generateEnemyAI(playerMessage, dmContext) {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{
+            role: "player",
+            text: `Based on this context, generate combat stats for the enemy the player is about to fight.\n\nDM narration: ${dmContext}\nPlayer action: "${playerMessage}"\n\nRespond with ONLY a JSON object, nothing else:\n{"name":"Enemy Name","hp":14,"attack":3,"difficulty":11,"tier":2,"tierLabel":"Standard"}\n\nTier guide: 1=Trivial(hp 6,atk 2,dc 8) 2=Standard(hp 14,atk 3,dc 11) 3=Elite(hp 28,atk 5,dc 14) 4=Boss(hp 52,atk 8,dc 17)`
+          }],
+          character: null,
+          mode: "narration",
+        }),
+      });
+      if (!response.ok) return null;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const line of decoder.decode(value, { stream: true }).split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const d = line.slice(6);
+          if (d === "[DONE]") break;
+          try { const p = JSON.parse(d); if (p.text) text += p.text; } catch {}
+        }
+      }
+      const match = text.match(/\{[\s\S]*?\}/);
+      if (!match) return null;
+      const parsed = JSON.parse(match[0]);
+      return { ...parsed, maxHp: parsed.hp };
+    } catch {
+      return null;
+    }
+  }
+
+  async function sendMessage(overrideText, skipEngine = false, combatActionHint = null) {
     const msg = (typeof overrideText === "string" ? overrideText : userInput).trim();
     if (!msg || loading) return;
     if (typeof overrideText !== "string") setUserInput("");
@@ -716,6 +886,55 @@ export default function App() {
           setCurrentHp(h => Math.max(0, h + changes.hpDelta));
         }
 
+        // ── Encounter path ────────────────────────────────────────────────
+        // Capture encounter at call time (React state is closed over).
+        let activeEncounter = encounterState;
+
+        // Auto-start an encounter when an attack intent is detected and no
+        // encounter is active. Try the lookup table first; fall back to AI.
+        if (!activeEncounter && (combatActionHint === "attack" || turnResult.intent === "attack")) {
+          let enemy = lookupEnemy(msg);
+          if (!enemy) {
+            const dmContext = messages.filter(m => m.role === "dm").slice(-2).map(m => m.text).join("\n");
+            enemy = await generateEnemyAI(msg, dmContext);
+          }
+          if (enemy) {
+            activeEncounter = startEncounter(enemy);
+            setEncounterState(activeEncounter);
+            setMessages(prev => [...prev, makeMsg("roll", `⚔️ ${enemy.name} appears! (${enemy.tierLabel ?? "?"}) — Combat begins`)]);
+          }
+        }
+
+        // Resolve the combat round if an encounter is active.
+        if (activeEncounter) {
+          const { nextEncounter, playerHpDelta, combatOver, outcome } =
+            resolveEncounterRound(activeEncounter, turnResult, currentHp, combatActionHint);
+
+          setCurrentHp(h => Math.max(0, h + playerHpDelta));
+
+          const narration = await getNarration(
+            turnResult,
+            { character, messages, encounter: nextEncounter },
+            { onError: (e) => setMessages(prev => [...prev, makeMsg("dm", `⚠️ ${e}`)]) }
+          );
+
+          if (combatOver) {
+            setPendingRecap({ outcome, ...nextEncounter.battleStats, battleLog: nextEncounter.battleLog });
+            setEncounterState(null);
+          } else {
+            setEncounterState(nextEncounter);
+          }
+
+          if (narration) {
+            setMessages(prev => [...prev, makeMsg("dm", narration)]);
+            speakText(narration);
+            triggerSaveFlash();
+          }
+          setLoading(false);
+          return;
+        }
+
+        // ── Standard free-play narration (no active encounter) ────────────
         // Step 4: ask AI to narrate — it receives the outcome, cannot change it
         const narration = await getNarration(
           turnResult,
@@ -1390,6 +1609,28 @@ export default function App() {
             onChange={e => setNotes(e.target.value)}
           />
         </div>
+      )}
+
+      {/* Encounter Overlay */}
+      {encounterState && !pendingRecap && (
+        <EncounterOverlay
+          encounter={encounterState}
+          playerHp={currentHp}
+          playerMaxHp={character?.hp ?? 20}
+          loading={loading}
+          onAttack={() => sendMessage("I attack!", false, "attack")}
+          onHeavy={()  => sendMessage("Heavy attack!", false, "heavy")}
+          onDefend={() => sendMessage("I defend!", false, "defend")}
+          onFlee={()   => sendMessage("I flee!", false, "flee")}
+        />
+      )}
+
+      {/* Encounter Recap */}
+      {pendingRecap && (
+        <EncounterRecap
+          recap={pendingRecap}
+          onDismiss={() => setPendingRecap(null)}
+        />
       )}
 
       {/* Input Bar */}
