@@ -129,6 +129,12 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-13 — Fight Tab: Live Combat Dashboard
+- `encounterEngine.js`: `startEncounter` now accepts `playerStats`; rolls initiative for player (d20 + DEX mod) and enemy (d20 + tier bonus 0–3); stores `initiative: { player, enemy, playerFirst }` in encounter state
+- `App.jsx`: extracted `LiveCombatView` component — shown in Fight tab when encounter is active; shows round counter, initiative-order badge (green "You go first" / red "Enemy goes first"), HP bars for both combatants sorted by initiative, real-time dealt/taken/crit/fumble stats, scrollable full battle log
+- Manual initiative tracker still shown in Fight tab when no encounter is active
+- `CombatTracker` now takes `encounterState` prop and delegates to `LiveCombatView` or manual tracker accordingly
+
 ### 2026-04-13 — Free-Play Encounter System
 - New file `encounterEngine.js`: tiered enemy table (Trivial/Standard/Elite/Boss), `lookupEnemy(text)` keyword match, `startEncounter(enemy)`, `resolveEncounterRound(encounter, turnResult, playerHp, actionHint)`
 - Auto-detect: attack intent in free-play triggers combat. Lookup table checked first; AI generation fallback (`generateEnemyAI`) for unknown enemies

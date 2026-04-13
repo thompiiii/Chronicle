@@ -62,10 +62,17 @@ export function lookupEnemy(text) {
 }
 
 // ── State factory ─────────────────────────────────────────────────────────────
+// playerStats: character.stats object ({ STR, DEX, ... }) — used for initiative mod
 
-export function startEncounter(enemy) {
+export function startEncounter(enemy, playerStats) {
+  const dexMod          = Math.floor(((playerStats?.DEX ?? 10) - 10) / 2);
+  const tierInitBonus   = { 1: 0, 2: 1, 3: 2, 4: 3 }[enemy.tier] ?? 0;
+  const playerInit      = rollDie(20) + dexMod;
+  const enemyInit       = rollDie(20) + tierInitBonus;
+
   return {
-    enemy:         { ...enemy, maxHp: enemy.maxHp ?? enemy.hp },
+    enemy:         { ...enemy, maxHp: enemy.maxHp ?? enemy.hp, initiative: enemyInit },
+    initiative:    { player: playerInit, enemy: enemyInit, playerFirst: playerInit >= enemyInit },
     battleStats:   { dealt: 0, taken: 0, rounds: 0, crits: 0, fumbles: 0 },
     battleLog:     [],
     lastCombatLog: [],

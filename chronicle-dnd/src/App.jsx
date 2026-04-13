@@ -351,8 +351,98 @@ function DiceRoller({ onRollToChat }) {
   );
 }
 
+// ── Live combat view (shown in Fight tab during an active encounter) ──────────
+function LiveCombatView({ encounter, character, currentHp }) {
+  const { enemy, initiative, battleStats, battleLog } = encounter;
+  const playerFirst = initiative?.playerFirst ?? true;
+  const logRef = useRef(null);
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [battleLog.length]);
+
+  const order = playerFirst
+    ? [
+        { label: character?.name ?? "You", init: initiative?.player, hp: currentHp, maxHp: character?.hp ?? 20, isPlayer: true },
+        { label: enemy.name, init: initiative?.enemy, hp: enemy.hp, maxHp: enemy.maxHp, isPlayer: false },
+      ]
+    : [
+        { label: enemy.name, init: initiative?.enemy, hp: enemy.hp, maxHp: enemy.maxHp, isPlayer: false },
+        { label: character?.name ?? "You", init: initiative?.player, hp: currentHp, maxHp: character?.hp ?? 20, isPlayer: true },
+      ];
+
+  return (
+    <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "300px" }}>
+      <div className="px-4 py-3 flex flex-col gap-2">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-white text-sm font-semibold">⚔️ Combat</span>
+            <span className="text-zinc-400 text-xs">Round {battleStats.rounds + 1}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono border ${
+              playerFirst
+                ? "bg-green-950 border-green-800 text-green-400"
+                : "bg-red-950 border-red-900 text-red-400"
+            }`}>
+              {playerFirst ? "You go first" : "Enemy goes first"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] font-mono">
+            <span className="text-red-400">⚔ {battleStats.dealt}</span>
+            <span className="text-amber-400">🛡 {battleStats.taken}</span>
+            {battleStats.crits   > 0 && <span className="text-yellow-400">⚡{battleStats.crits}</span>}
+            {battleStats.fumbles > 0 && <span className="text-red-600">💀{battleStats.fumbles}</span>}
+          </div>
+        </div>
+
+        {/* Initiative order with HP bars */}
+        <div className="flex flex-col gap-1.5">
+          {order.map((c, i) => {
+            const pct = Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100));
+            const bar = pct <= 25 ? "bg-red-500" : pct <= 50 ? "bg-amber-500" : c.isPlayer ? "bg-green-500" : "bg-red-400";
+            return (
+              <div key={i} className={`rounded-lg px-3 py-2 border ${i === 0 ? "bg-amber-950/20 border-amber-900/50" : "bg-black border-zinc-800"}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    {i === 0 && <span className="text-amber-400 text-[10px]">▶</span>}
+                    <span className={`text-xs font-semibold ${c.isPlayer ? "text-amber-300" : "text-white"}`}>
+                      {c.label}{c.isPlayer ? " (you)" : ""}
+                    </span>
+                    <span className="text-zinc-600 text-[10px] font-mono">init {c.init}</span>
+                  </div>
+                  <span className={`text-[11px] font-mono ${pct <= 25 ? "text-red-400" : "text-zinc-400"}`}>{c.hp}/{c.maxHp} HP</span>
+                </div>
+                <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-500 ${bar}`} style={{ width: `${pct}%` }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Full battle log */}
+        {battleLog.length > 0 && (
+          <div ref={logRef} className="bg-black border border-zinc-800 rounded-lg px-3 py-2 flex flex-col gap-0.5 overflow-y-auto" style={{ maxHeight: "90px" }}>
+            <p className="text-[9px] uppercase tracking-widest text-zinc-700 mb-0.5">Battle Log</p>
+            {battleLog.map((line, i) => (
+              <p key={i} className={`text-[11px] font-mono ${i >= battleLog.length - 4 ? "text-zinc-400" : "text-zinc-600"}`}>{line}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Combat Tracker ────────────────────────────────────────────────────────
-function CombatTracker({ character, currentHp }) {
+// Live encounter dashboard when in combat; manual initiative tracker when idle.
+function CombatTracker({ character, currentHp, encounterState }) {
+  if (encounterState) {
+    return <LiveCombatView encounter={encounterState} character={character} currentHp={currentHp} />;
+  }
+
+  // ── Manual initiative tracker (no active encounter) ───────────────────────
   const [combatants, setCombatants] = useState(() =>
     character ? [{ id: "player", name: character.name, initiative: 0, hp: currentHp, maxHp: character.hp, isPlayer: true }] : []
   );
@@ -363,27 +453,19 @@ function CombatTracker({ character, currentHp }) {
   const [started, setStarted] = useState(false);
 
   const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
-  const activeCombatant = sorted[currentIdx];
 
   function addCombatant() {
     const name = newName.trim();
     if (!name) return;
     const init = newInit !== "" ? Number(newInit) : Math.floor(Math.random() * 20) + 1;
     setCombatants(prev => [...prev, { id: Date.now(), name, initiative: init, hp: null, maxHp: null, isPlayer: false }]);
-    setNewName("");
-    setNewInit("");
+    setNewName(""); setNewInit("");
   }
 
   function rollPlayerInit() {
     const roll = Math.floor(Math.random() * 20) + 1;
     const dexMod = character ? Math.floor((character.stats.DEX - 10) / 2) : 0;
     setCombatants(prev => prev.map(c => c.isPlayer ? { ...c, initiative: roll + dexMod } : c));
-  }
-
-  function remove(id) {
-    const newList = combatants.filter(c => c.id !== id);
-    setCombatants(newList);
-    setCurrentIdx(0);
   }
 
   function nextTurn() {
@@ -393,44 +475,32 @@ function CombatTracker({ character, currentHp }) {
   }
 
   function resetCombat() {
-    setCurrentIdx(0);
-    setRound(1);
-    setStarted(false);
+    setCurrentIdx(0); setRound(1); setStarted(false);
     setCombatants(character
       ? [{ id: "player", name: character.name, initiative: 0, hp: currentHp, maxHp: character.hp, isPlayer: true }]
-      : []
-    );
+      : []);
   }
 
   return (
     <div className="bg-zinc-900 border-t border-zinc-800 flex-shrink-0" style={{ maxHeight: "260px", overflowY: "auto" }}>
       <div className="px-4 py-3">
-        {/* Header row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-white text-sm font-semibold">⚔️ Combat</span>
+            <span className="text-white text-sm font-semibold">⚔️ Initiative</span>
             {started && <span className="text-zinc-400 text-xs">Round {round}</span>}
           </div>
           <div className="flex gap-1">
-            {!started ? (
-              <button onClick={() => setStarted(true)} disabled={combatants.length < 2}
-                className="px-2 py-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-black rounded text-xs cursor-pointer transition-colors font-bold">
-                Start
-              </button>
-            ) : (
-              <button onClick={nextTurn}
-                className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded text-xs cursor-pointer transition-colors font-bold">
-                Next →
-              </button>
-            )}
+            {!started
+              ? <button onClick={() => setStarted(true)} disabled={combatants.length < 2}
+                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-black rounded text-xs cursor-pointer font-bold">Start</button>
+              : <button onClick={nextTurn}
+                  className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded text-xs cursor-pointer font-bold">Next →</button>
+            }
             <button onClick={resetCombat}
-              className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs cursor-pointer transition-colors">
-              Reset
-            </button>
+              className="px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded text-xs cursor-pointer">Reset</button>
           </div>
         </div>
 
-        {/* Combatant list */}
         <div className="space-y-1 mb-2">
           {(started ? sorted : combatants).map((c, i) => {
             const isActive = started && sorted[currentIdx]?.id === c.id;
@@ -439,41 +509,26 @@ function CombatTracker({ character, currentHp }) {
                 <span className="w-3 text-center text-amber-400">{isActive ? "▶" : ""}</span>
                 <span className={`flex-1 truncate font-medium ${c.isPlayer ? "text-amber-300" : "text-white"}`}>{c.name}{c.isPlayer ? " (you)" : ""}</span>
                 <div className="flex items-center gap-1">
-                  {c.isPlayer ? (
-                    <button onClick={rollPlayerInit} title="Roll initiative"
-                      className="text-zinc-400 hover:text-white cursor-pointer px-1">🎲</button>
-                  ) : null}
+                  {c.isPlayer && <button onClick={rollPlayerInit} className="text-zinc-400 hover:text-white cursor-pointer px-1">🎲</button>}
                   <span className="text-zinc-400 w-14 text-right">Init: <span className="text-white font-bold">{c.initiative}</span></span>
                 </div>
-                <button onClick={() => remove(c.id)} className="text-zinc-700 hover:text-red-400 cursor-pointer ml-1">✕</button>
+                <button onClick={() => { setCombatants(prev => prev.filter(x => x.id !== c.id)); setCurrentIdx(0); }} className="text-zinc-700 hover:text-red-400 cursor-pointer ml-1">✕</button>
               </div>
             );
           })}
           {combatants.length === 0 && <p className="text-zinc-700 text-xs text-center py-1">Add combatants below</p>}
         </div>
 
-        {/* Add combatant form */}
         <div className="flex gap-1 pt-2 border-t border-zinc-800">
-          <input
-            className="bg-black border border-zinc-700 rounded px-2 py-1 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-amber-500 flex-1"
-            placeholder="Enemy name…"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && addCombatant()}
-          />
-          <input
-            className="bg-black border border-zinc-700 rounded px-2 py-1 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-amber-500 w-14 text-center"
-            placeholder="Init"
-            type="number"
-            value={newInit}
-            onChange={e => setNewInit(e.target.value)}
-          />
+          <input className="bg-black border border-zinc-700 rounded px-2 py-1 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-amber-500 flex-1"
+            placeholder="Enemy name…" value={newName}
+            onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && addCombatant()} />
+          <input className="bg-black border border-zinc-700 rounded px-2 py-1 text-white placeholder-zinc-600 text-xs focus:outline-none focus:border-amber-500 w-14 text-center"
+            placeholder="Init" type="number" value={newInit} onChange={e => setNewInit(e.target.value)} />
           <button onClick={addCombatant}
-            className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded text-xs cursor-pointer transition-colors font-bold">
-            Add
-          </button>
+            className="px-2 py-1 bg-amber-600 hover:bg-amber-500 text-black rounded text-xs cursor-pointer font-bold">Add</button>
         </div>
-        <p className="text-zinc-700 text-xs mt-1">Leave Init blank to roll d20 automatically.</p>
+        <p className="text-zinc-700 text-xs mt-1">Leave Init blank to auto-roll d20.</p>
       </div>
     </div>
   );
@@ -899,7 +954,7 @@ export default function App() {
             enemy = await generateEnemyAI(msg, dmContext);
           }
           if (enemy) {
-            activeEncounter = startEncounter(enemy);
+            activeEncounter = startEncounter(enemy, character?.stats);
             setEncounterState(activeEncounter);
             setMessages(prev => [...prev, makeMsg("roll", `⚔️ ${enemy.name} appears! (${enemy.tierLabel ?? "?"}) — Combat begins`)]);
           }
@@ -1327,7 +1382,7 @@ export default function App() {
       {activeTab === "dice" && <DiceRoller onRollToChat={handleRollToChat} />}
 
       {/* Combat Tracker Panel */}
-      {activeTab === "combat" && <CombatTracker character={character} currentHp={currentHp} />}
+      {activeTab === "combat" && <CombatTracker character={character} currentHp={currentHp} encounterState={encounterState} />}
 
       {/* Character Sheet Panel */}
       {activeTab === "sheet" && character && (() => {
