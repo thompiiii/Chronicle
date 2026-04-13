@@ -1019,6 +1019,10 @@ export default function App() {
               setGold(g => g + loot.gold);
               if (loot.items.length > 0) setInventory(inv => [...inv, ...loot.items]);
             }
+            // Restore HP to full after victory or escape so HP doesn't bleed between encounters
+            if (outcome === "victory" || outcome === "fled") {
+              setCurrentHp(character?.hp ?? 10);
+            }
             setPendingRecap({ outcome, ...nextEncounter.battleStats, battleLog: nextEncounter.battleLog, narration, loot });
             setEncounterState(null);
           } else {

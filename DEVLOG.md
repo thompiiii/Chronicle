@@ -129,6 +129,11 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-13 — Fix: HP Now Resets Between Free-Play Encounters
+- `App.jsx`: on encounter `victory` or `fled` outcome, `setCurrentHp(character.hp)` restores HP to max before setting `pendingRecap`
+- This prevents free-play `currentHp` from bleeding into subsequent encounters (HP now works per-encounter, not per-session)
+- Defeat leaves HP at 0 as before (player was downed)
+
 ### 2026-04-13 — Remove Fight Tab + Tier-Appropriate Loot Tables
 - `TAB_BUTTONS` in `App.jsx`: removed `{ id: "combat", label: "⚔️ Fight" }` — manual initiative tracker was redundant now that `EncounterOverlay` handles all combat UI
 - `encounterEngine.js`: added `LOOT_TABLES` (4 tiers) and exported `rollLoot(tier)`:
