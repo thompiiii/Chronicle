@@ -111,6 +111,7 @@ body {
   letter-spacing: 0.15em;
   color: var(--c-text);
   text-shadow: 0 0 40px rgba(200, 169, 110, 0.2);
+  text-align: center;
 }
 
 .c-subtitle {
@@ -118,6 +119,7 @@ body {
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: var(--c-text-muted);
+  text-align: center;
 }
 
 .c-screen-title {
