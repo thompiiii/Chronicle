@@ -1,9 +1,9 @@
 # Chronicle — Claude Context
 
 ## What This Project Is
-Chronicle: browser-based AI Dungeon Master RPG. Two modes:
-1. **Free-play** — open-ended chat with AI DM, character creation, dice, inventory tabs
-2. **Campaign** — structured branching campaigns (currently: Goblin Cave) with turn-based combat, loot, item usage
+Chronicle is a browser-based AI Dungeon Master RPG. Two modes:
+1. **Free-play** — open-ended chat with an AI DM, character creation, dice, inventory tabs
+2. **Campaign** — structured branching campaigns (currently: Goblin Cave) with turn-based combat, loot, and item usage
 
 ## Stack
 - Vite + React 18 + Tailwind CSS v4
@@ -12,11 +12,11 @@ Chronicle: browser-based AI Dungeon Master RPG. Two modes:
 - Local dev server: `server/index.js` | Vercel serverless: `api/chat.js`
 
 ## Always Read First
-Before any task, read dev log:
+Before starting any task, read the dev log:
 ```
 /home/user/Chronicle/DEVLOG.md
 ```
-Contains: full architecture, system state, component list, campaign step map, item effects table, change history, known issues.
+It contains: full architecture, current state of all systems, component list, campaign step map, item effects table, change history, and known issues.
 
 ## Key Directories
 ```
@@ -40,15 +40,15 @@ CHANGELOG.md                  — user-facing changelog
 
 ## Development Rules
 - All pushes go to `main` (triggers Vercel deploy)
-- State always immutable — spread operator pattern throughout, never mutate
-- AI narration-only — cannot change success/failure, roll dice, or modify stats
-- `resolveStep` single entry point for all campaign step logic
+- State is always immutable — spread operator pattern throughout, never mutate
+- AI is narration-only — it cannot change success/failure, roll dice, or modify stats
+- `resolveStep` is the single entry point for all campaign step logic
 - `goToStep` handles all step transitions (clears narration, lastRoll, pendingTransition, resets battleStats on combat entry, applies loot)
-- `useItem` pure function — no async, no side effects beyond returning new state
+- `useItem` is a pure function — no async, no side effects beyond returning new state
 
 ## After Every Change
-**Always do before committing — no exceptions:**
-1. Update `DEVLOG.md` — add entry under Change History with date, what changed, why. Update affected state shapes, component tables, architecture sections.
-2. Include `DEVLOG.md` in same commit as code changes (not separate follow-up).
+**Always do this before committing — no exceptions:**
+1. Update `DEVLOG.md` — add an entry under Change History with the date, what changed, and why. Update any affected state shapes, component tables, or architecture sections.
+2. Include `DEVLOG.md` in the same commit as the code changes (not a separate follow-up commit).
 
-One DEVLOG entry covering all changed files is fine.
+If multiple files changed, one DEVLOG entry covering all of them is fine.
