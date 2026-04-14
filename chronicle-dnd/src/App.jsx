@@ -800,6 +800,22 @@ export default function App() {
   const mockIndex = useRef(0);
   const inputRef = useRef(null);
   const autoSendTimeout = useRef(null);
+  const narratorVoice = useRef(null);
+
+  // Load the narrator voice once and cache it — getVoices() is async on first call
+  useEffect(() => {
+    function pickVoice() {
+      const voices = window.speechSynthesis?.getVoices() ?? [];
+      narratorVoice.current =
+        voices.find(v => v.name.toLowerCase().includes("daniel")) ??
+        voices.find(v => v.name.toLowerCase().includes("arthur")) ??
+        voices.find(v => v.lang === "en-GB" && !v.name.toLowerCase().includes("female")) ??
+        null;
+    }
+    pickVoice();
+    window.speechSynthesis?.addEventListener("voiceschanged", pickVoice);
+    return () => window.speechSynthesis?.removeEventListener("voiceschanged", pickVoice);
+  }, []);
 
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -1137,14 +1153,18 @@ export default function App() {
   function speakText(text) {
     if (!window.speechSynthesis || !voiceEnabled) return;
     window.speechSynthesis.cancel();
-    const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '');
+    const cleanText = text
+      .replace(/\*\*/g, '').replace(/\*/g, '').replace(/_/g, '')  // markdown bold/italic
+      .replace(/[—–]/g, ', ')          // em/en dashes → short pause
+      .replace(/["""'']/g, '')          // strip curly quotes
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')  // markdown links → just the label
+      .replace(/\s+/g, ' ').trim();
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.rate = 0.88; utterance.pitch = 0.75;
-    const voices = window.speechSynthesis.getVoices();
-    const deep = voices.find(v => v.name.toLowerCase().includes("daniel") || v.lang === "en-GB");
-    if (deep) utterance.voice = deep;
+    utterance.rate = 0.88;
+    utterance.pitch = 0.75;
+    if (narratorVoice.current) utterance.voice = narratorVoice.current;
     utterance.onstart = () => setSpeaking(true);
-    utterance.onend = () => setSpeaking(false);
+    utterance.onend   = () => setSpeaking(false);
     window.speechSynthesis.speak(utterance);
   }
 
