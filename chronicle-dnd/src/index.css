@@ -10,6 +10,7 @@ body {
   background: #0c0c0e;
   color: #e8e4d8;
   font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 17px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -21,6 +22,7 @@ body {
   text-align: left;
   min-height: 100svh;
   display: block;
+  background: #0c0c0e;
 }
 
 /* ── Chronicle CSS variables ─────────────────────────────────────────────── */
@@ -49,6 +51,9 @@ body {
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 0 80px rgba(0,0,0,0.6);
 }
 
 .chronicle-app::before {

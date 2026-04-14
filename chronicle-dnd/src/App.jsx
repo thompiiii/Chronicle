@@ -945,7 +945,7 @@ export default function App() {
 
   async function sendMessage(overrideText, skipEngine = false, combatActionHint = null) {
     const msg = (typeof overrideText === "string" ? overrideText : userInput).trim();
-    if (!msg || loading) return;
+    if ((!msg && combatActionHint !== "deathsave") || loading) return;
     if (typeof overrideText !== "string") setUserInput("");
 
     // Use the game engine for all typed player actions.
