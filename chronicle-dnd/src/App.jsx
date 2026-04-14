@@ -1445,6 +1445,9 @@ export default function App() {
         )}
       </div>
 
+      {/* Sidebar: tab panels + encounter — becomes right column on desktop */}
+      <div className="c-sidebar">
+
       {/* Dice Panel */}
       {activeTab === "dice" && <DiceRoller onRollToChat={handleRollToChat} />}
 
@@ -1739,6 +1742,8 @@ export default function App() {
           onDismiss={() => setPendingRecap(null)}
         />
       )}
+
+      </div>{/* end .c-sidebar */}
 
       {/* Input Bar */}
       <div className="c-input-area">
