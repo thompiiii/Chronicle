@@ -1387,7 +1387,7 @@ export default function App() {
           ))}
           <span title={`${character?.race} ${character?.class}`} style={{ fontSize: "1.1rem" }}>{getPortrait(character?.class)}</span>
           <div className="c-hp-badge">♥ {currentHp}/{character?.hp}</div>
-          <button className="c-icon-btn" onClick={() => { if (voiceEnabled) window.speechSynthesis?.pause(); else window.speechSynthesis?.resume(); setVoiceEnabled(!voiceEnabled); }}>
+          <button className="c-icon-btn" onClick={() => { window.speechSynthesis?.cancel(); setSpeaking(false); setVoiceEnabled(v => !v); }}>
             {voiceEnabled ? "🔊" : "🔇"}
           </button>
         </div>
