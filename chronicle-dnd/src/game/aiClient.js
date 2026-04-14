@@ -1,4 +1,4 @@
-// ── Chronicle AI Client ────────────────────────────────────────────────────
+// ── Unseen Hand AI Client ──────────────────────────────────────────────────
 // Responsible ONLY for narration. Receives a fully-resolved TurnResult from
 // the game engine and asks Claude to narrate the outcome.
 //

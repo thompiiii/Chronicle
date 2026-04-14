@@ -1,4 +1,4 @@
-// ── Chronicle Campaign Engine ──────────────────────────────────────────────
+// ── Unseen Hand Campaign Engine ────────────────────────────────────────────
 // Drives structured campaigns (goblinCave, etc.) where the story follows a
 // fixed branching script rather than open-ended AI narration.
 //

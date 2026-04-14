@@ -1,4 +1,4 @@
-// ── Chronicle Game Engine ──────────────────────────────────────────────────
+// ── Unseen Hand Game Engine ────────────────────────────────────────────────
 // DESIGN PRINCIPLE: Game logic lives here. AI is only called for narration.
 //
 // Flow per turn:

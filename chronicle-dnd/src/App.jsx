@@ -1184,7 +1184,7 @@ export default function App() {
             <path d="M26 4L30 18H44L33 27L37 41L26 32L15 41L19 27L8 18H22L26 4Z" fill="none" stroke="#c8a96e" strokeWidth="1.5" strokeLinejoin="round"/>
             <path d="M26 14L28.5 22H37L30.5 26.5L33 34.5L26 30L19 34.5L21.5 26.5L15 22H23.5L26 14Z" fill="#c8a96e" opacity="0.15"/>
           </svg>
-          <h1 className="c-title">CHRONICLE</h1>
+          <h1 className="c-title">UNSEEN HAND</h1>
           <p className="c-subtitle">AI Dungeon Master · D&amp;D 5e</p>
 
           <div className="c-home-form">
@@ -1392,7 +1392,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <button className="c-back-btn" onClick={() => setScreen("home")} title="Back to home">←</button>
           <div className="c-game-wordmark">
-            <div className="c-game-title">CHRONICLE</div>
+            <div className="c-game-title">UNSEEN HAND</div>
             {sessionCode && <div className="c-game-session">{sessionCode}</div>}
           </div>
         </div>

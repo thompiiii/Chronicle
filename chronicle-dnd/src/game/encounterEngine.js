@@ -1,4 +1,4 @@
-// ── Chronicle Encounter Engine ─────────────────────────────────────────────
+// ── Unseen Hand Encounter Engine ───────────────────────────────────────────
 // Free-play combat encounters: enemy lookup, round resolution.
 //
 // Encounter state shape:

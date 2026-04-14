@@ -1,4 +1,4 @@
-# Chronicle — Dev Log
+# Unseen Hand — Dev Log
 
 Running log of all significant changes. Updated after every session.
 Referenced by Claude to understand current state, past decisions, and known issues.
@@ -128,6 +128,12 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 ---
 
 ## Change History
+
+### 2026-04-14 — Rename App to "Unseen Hand"
+- `index.html`: page title updated to "Unseen Hand — AI Dungeon Master"
+- `App.jsx`: home screen `<h1>` and game header wordmark changed from CHRONICLE → UNSEEN HAND
+- Engine file comments updated (gameEngine, campaignEngine, encounterEngine, aiClient)
+- CSS class names (`.chronicle-app`, `--c-*`) unchanged — internal only
 
 ### 2026-04-13 — Full UI Retheme (Chronicle CSS Layer)
 - `chronicle-dnd/src/index.css`: Complete replacement — removed Vite template defaults, added `@import "tailwindcss"` + Google Fonts (Cinzel + Crimson Pro), added `:root` CSS variables (`--c-bg`, `--c-surface`, `--c-accent`, etc.), added `.chronicle-app` grain overlay, and defined full Chronicle CSS class set
