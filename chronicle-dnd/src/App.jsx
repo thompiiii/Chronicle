@@ -1168,17 +1168,6 @@ export default function App() {
           <p className="c-subtitle">AI Dungeon Master · D&amp;D 5e</p>
 
           <div className="c-home-form">
-            <div className="c-home-input-wrap">
-              <label className="c-label">Your name</label>
-              <input
-                className="c-field-input"
-                placeholder="Enter your name…"
-                value={playerName}
-                onChange={e => setPlayerName(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && createSession()}
-              />
-            </div>
-
             <button className="c-btn-primary" onClick={createSession}>▶ Begin</button>
 
             <button className="c-btn-ghost" onClick={() => { setCampaignState(createCampaignState(goblinCaveCampaign)); setScreen("campaign"); }}>
