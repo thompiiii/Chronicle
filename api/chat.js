@@ -4,6 +4,37 @@ export const config = {
   api: { responseLimit: false },
 };
 
+// ── Simple in-memory rate limiter (per-instance; best-effort on serverless) ─
+const rateLimitMap = new Map();
+const RATE_LIMIT    = 20;          // max requests
+const RATE_WINDOW   = 60 * 1000;   // per 60 seconds
+
+function isRateLimited(ip) {
+  const now    = Date.now();
+  const record = rateLimitMap.get(ip) ?? { count: 0, start: now };
+  if (now - record.start > RATE_WINDOW) {
+    rateLimitMap.set(ip, { count: 1, start: now });
+    return false;
+  }
+  if (record.count >= RATE_LIMIT) return true;
+  record.count++;
+  rateLimitMap.set(ip, record);
+  return false;
+}
+
+// ── Input validation ───────────────────────────────────────────────────────
+function validateBody(body) {
+  const { messages = [], character = {} } = body;
+  if (!Array.isArray(messages))           return "messages must be an array";
+  if (messages.length > 50)               return "Too many messages (max 50)";
+  for (const m of messages) {
+    if (typeof m.text !== "string")       return "Each message must have a text string";
+    if (m.text.length > 2000)             return "Message too long (max 2000 chars)";
+  }
+  if (typeof character !== "object" || Array.isArray(character)) return "character must be an object";
+  return null;
+}
+
 // ── System prompts ─────────────────────────────────────────────────────────
 
 function buildDMPrompt(character) {
@@ -43,6 +74,15 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  // Rate limit by IP
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() ?? req.socket?.remoteAddress ?? "unknown";
+  if (isRateLimited(ip)) {
+    return res.status(429).json({ error: "Too many requests — slow down." });
+  }
+
+  const validationError = validateBody(req.body);
+  if (validationError) return res.status(400).json({ error: validationError });
 
   const { messages = [], character = {}, mode = "dm" } = req.body;
 
@@ -88,7 +128,8 @@ export default async function handler(req, res) {
     res.write("data: [DONE]\n\n");
     res.end();
   } catch (err) {
-    res.write(`data: ${JSON.stringify({ error: err?.message || "Unexpected error" })}\n\n`);
+    console.error("Claude API error:", err?.message);
+    res.write(`data: ${JSON.stringify({ error: "An error occurred. Please try again." })}\n\n`);
     res.end();
   }
 }

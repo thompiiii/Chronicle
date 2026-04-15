@@ -1,20 +1,53 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import Anthropic from "@anthropic-ai/sdk";
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// ── CORS — local dev only; lock to Vite dev server origin ─────────────────
+app.use(cors({
+  origin: ["http://localhost:5000", "http://127.0.0.1:5000"],
+  methods: ["POST", "GET"],
+}));
+
+// ── Rate limit — 20 requests per minute per IP ────────────────────────────
+app.use(rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests — slow down." },
+}));
+
+app.use(express.json({ limit: "50kb" }));
 
 const apiKey = process.env.ANTHROPIC_API_KEY;
-console.log(`API key loaded: ${apiKey ? apiKey.slice(0, 20) + "..." : "MISSING"}`);
+if (!apiKey) {
+  console.error("ERROR: ANTHROPIC_API_KEY is not set");
+  process.exit(1);
+}
 const client = new Anthropic({ apiKey });
 
+// ── Input validation ───────────────────────────────────────────────────────
+function validateBody(body) {
+  const { messages = [], character = {} } = body;
+  if (!Array.isArray(messages))           return "messages must be an array";
+  if (messages.length > 50)               return "Too many messages (max 50)";
+  for (const m of messages) {
+    if (typeof m.text !== "string")       return "Each message must have a text string";
+    if (m.text.length > 2000)             return "Message too long (max 2000 chars)";
+  }
+  if (typeof character !== "object" || Array.isArray(character)) return "character must be an object";
+  return null;
+}
+
 // POST /api/chat
-// Body: { messages: [{ role, text }], character: { name, class, race } }
-// Streams the DM response back as plain text chunks (SSE).
 app.post("/api/chat", async (req, res) => {
+  const validationError = validateBody(req.body);
+  if (validationError) return res.status(400).json({ error: validationError });
+
   const { messages = [], character = {} } = req.body;
 
   const systemPrompt = `You are a Dungeon Master running a D&D 5e campaign. Be vivid, atmospheric, and reactive to player choices. Keep responses under 150 words. Always end with "What do you do?"
@@ -32,7 +65,6 @@ Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${c
     .filter((m) => m.role === "player")
     .map((m) => ({ role: "user", content: m.text }));
 
-  // Need at least one message
   if (apiMessages.length === 0) {
     return res.status(400).json({ error: "No player messages provided" });
   }
@@ -61,7 +93,8 @@ Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${c
     res.write("data: [DONE]\n\n");
     res.end();
   } catch (err) {
-    res.write(`data: ${JSON.stringify({ error: err?.message || "Unexpected error" })}\n\n`);
+    console.error("Claude API error:", err?.message);
+    res.write(`data: ${JSON.stringify({ error: "An error occurred. Please try again." })}\n\n`);
     res.end();
   }
 });
