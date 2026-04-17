@@ -129,6 +129,22 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-17 — Goblin Cave V2: Strategic Combat System
+- `campaigns/goblinCaveV2.js` (new): V2 campaign — same map/loot as V1, all combat enemies gain `behavior` (turn pattern) and `turnIndex`
+- `game/campaignEngine.js`:
+  - `createCampaignState`: added `status: { player: [], enemy: [] }`, `intent: null`, `nextRollBonus: 0` to player
+  - `goToStep`: resets `status` on combat entry; pre-populates `intent` with `behavior[0]` for V2 enemies
+  - `applyStatusEffectsV2`: handles bleed (ticks + dmg); guard/stagger are consumed on use, not ticked
+  - `resolveStep` combat: V2 path added (`isV2 = !!step.enemy.behavior`); V1 path unchanged
+    - V2 player: roll bonus from `nextRollBonus` (set by defend); heavy hit → stagger status on enemy; defend → guard status on player
+    - V2 enemy: uses telegraphed `intent` instead of random roll; stagger skips attack; guard halves damage; both consumed on use
+    - After each turn: `turnIndex` advances, next intent computed and saved to state
+- `components/CampaignScreen.jsx`:
+  - `StatusBadges` component: renders guard/stagger/bleed badges under HP bars (V2 only)
+  - `ActionBar`: accepts `isV2` prop; updates Heavy/Defend subtitles for V2
+  - Combat layout: `StatusBadges` under EnemyPanel + PlayerPanel; intent banner `⚠️ Heavy Attack Incoming` shown when `gameState.intent === "heavy"`
+- `App.jsx`: imported `goblinCaveV2Campaign`; added "⚔️ Goblin Cave V2" button on home screen
+
 ### 2026-04-14 — Rename App to "Unseen Hand"
 - `index.html`: page title updated to "Unseen Hand — AI Dungeon Master"
 - `App.jsx`: home screen `<h1>` and game header wordmark changed from CHRONICLE → UNSEEN HAND

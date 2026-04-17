@@ -36,6 +36,27 @@ function resolveEnemyTurn(enemy) {
                  return { roll, damage: enemy.attack,              result: "hit"    };
 }
 
+// ── V2 Combat Helpers ──────────────────────────────────────────────────────
+
+// Apply bleed at turn start. Guard/stagger are consumed on use, not ticked.
+function applyStatusEffectsV2(enemy, status) {
+  enemy  = { ...enemy };
+  status = { player: [...status.player], enemy: [...status.enemy] };
+  const log = [];
+
+  status.enemy = status.enemy.filter(s => {
+    if (s.type === "bleed") {
+      enemy.hp = Math.max(0, enemy.hp - 2);
+      log.push(`${enemy.name} bleeds for 2 damage`);
+      s.turns -= 1;
+      return s.turns > 0;
+    }
+    return true; // preserve stagger until consumed by enemy attack
+  });
+
+  return { enemy, status, log };
+}
+
 // ── Factory ────────────────────────────────────────────────────────────────
 
 export function createCampaignState(campaign, playerOverrides = {}) {
@@ -49,13 +70,16 @@ export function createCampaignState(campaign, playerOverrides = {}) {
       inventory:      [],
       gold:           0,
       equippedWeapon: null,
+      nextRollBonus:  0,
       ...campaign.playerOverrides,
       ...playerOverrides,
     },
     campaign,
     currentStep: campaign.startStep,
-    enemy: null,
-    log:   [],
+    enemy:  null,
+    log:    [],
+    status: { player: [], enemy: [] },
+    intent: null,
   };
 }
 
@@ -79,6 +103,14 @@ export function goToStep(gameState, stepId) {
     next.enemy       = { ...step.enemy, maxHp: step.enemy.hp };
     next.battleStats = { dealt: 0, taken: 0, rounds: 0, crits: 0, fumbles: 0 };
     next.battleLog   = [];
+    next.status      = { player: [], enemy: [] };
+    // V2: pre-populate first intent so player sees it before turn 1
+    if (step.enemy.behavior) {
+      next.intent          = step.enemy.behavior[0];
+      next.enemy.turnIndex = 0;
+    } else {
+      next.intent = null;
+    }
   }
 
   if (step.type === "loot") {
@@ -129,35 +161,58 @@ export async function resolveStep(gameState, playerInput) {
 
   // ── Combat ───────────────────────────────────────────────────────────────
   if (step.type === "combat") {
-    const enemy     = gameState.enemy
+    const isV2 = !!(step.enemy.behavior);
+
+    let enemy = gameState.enemy
       ? { ...gameState.enemy }
       : { ...step.enemy, maxHp: step.enemy.hp };
+
     const action    = detectCombatAction(playerInput);
     const combatLog = [];
 
+    // V2: apply bleed at start of turn; guard/stagger consumed on use below
+    let status = {
+      player: [...(gameState.status?.player ?? [])],
+      enemy:  [...(gameState.status?.enemy  ?? [])],
+    };
+    if (isV2) {
+      const r = applyStatusEffectsV2(enemy, status);
+      enemy  = r.enemy;
+      status = r.status;
+      combatLog.push(...r.log);
+    }
+
     // ── Player turn ──────────────────────────────────────────────────────
-    let playerRoll = 0;
-    let isCrit     = false;
-    let isFumble   = false;
-    let playerHit  = false;
+    let playerRoll   = 0;
+    let naturalRoll  = 0;
+    let isCrit       = false;
+    let isFumble     = false;
+    let playerHit    = false;
     let playerDamage = 0;
     let fumbleDamage = 0;
 
     if (action === "defend") {
-      // Defending skips the player attack — just brace for the enemy turn
       combatLog.push(`🛡️ You take a defensive stance`);
+      if (isV2) status.player.push({ type: "guard", turns: 1 });
     } else {
-      playerRoll = rollDie(20);
-      isCrit     = playerRoll === 20;
-      isFumble   = playerRoll === 1;
-      const dc   = step.enemy.difficulty + (action === "heavy" ? 3 : 0);
-      playerHit  = !isFumble && (isCrit || playerRoll >= dc);
+      const rollBonus = isV2 ? (gameState.player.nextRollBonus || 0) : 0;
+      naturalRoll = rollDie(20);
+      playerRoll  = naturalRoll + rollBonus;
+      isCrit      = naturalRoll === 20;
+      isFumble    = naturalRoll === 1;
+      const dc    = step.enemy.difficulty + (action === "heavy" ? 3 : 0);
+      playerHit   = !isFumble && (isCrit || playerRoll >= dc);
 
       if (playerHit) {
         playerDamage = action === "heavy"
           ? gameState.player.attack * 2
           : rollDamage(gameState.player.attack);
         if (isCrit) playerDamage *= 2;
+        // V2: heavy hit staggers enemy (skips their next attack this turn)
+        if (isV2 && action === "heavy") {
+          status.enemy.push({ type: "stagger", turns: 1 });
+          combatLog.push(`💫 ${enemy.name} is staggered!`);
+        }
       }
       fumbleDamage = isFumble ? rollDie(2) : 0;
       enemy.hp = Math.max(0, enemy.hp - playerDamage);
@@ -172,24 +227,69 @@ export async function resolveStep(gameState, playerInput) {
     }
 
     // ── Enemy turn ───────────────────────────────────────────────────────
-    let playerHp     = gameState.player.hp - fumbleDamage;
-    let enemyTurn    = { roll: 0, damage: 0, result: "miss" };
-    let actualTaken  = fumbleDamage;
+    let playerHp    = gameState.player.hp - fumbleDamage;
+    let enemyTurn   = { roll: 0, damage: 0, result: "miss" };
+    let actualTaken = fumbleDamage;
 
     if (enemy.hp > 0) {
-      enemyTurn = resolveEnemyTurn(enemy);
-      let incoming = enemyTurn.damage;
-      if (action === "defend") incoming = Math.ceil(incoming * 0.5);
-      playerHp    = Math.max(0, playerHp - incoming);
-      actualTaken += incoming;
+      if (isV2) {
+        // Use telegraphed intent; consume stagger and guard on resolution
+        const intent = gameState.intent || "attack";
 
-      if (action === "defend" && enemyTurn.result !== "miss") combatLog.push(`🛡️ You brace — damage halved`);
-      if (enemyTurn.result === "miss") {
-        combatLog.push(`${step.enemy.name} attacks (${enemyTurn.roll}) → MISS`);
+        const isStaggered = status.enemy.some(s => s.type === "stagger");
+        status.enemy = status.enemy.filter(s => s.type !== "stagger");
+
+        if (isStaggered) {
+          combatLog.push(`💫 ${step.enemy.name} is staggered — attack skipped!`);
+          enemyTurn = { roll: 0, damage: 0, result: "miss" };
+        } else {
+          let incoming = intent === "heavy" ? enemy.attack * 2 : enemy.attack;
+
+          const hasGuard = status.player.some(s => s.type === "guard");
+          status.player = status.player.filter(s => s.type !== "guard");
+          if (hasGuard) {
+            incoming = Math.floor(incoming / 2);
+            combatLog.push(`🛡️ Guard absorbs the blow — damage halved!`);
+          }
+
+          playerHp    = Math.max(0, playerHp - incoming);
+          actualTaken += incoming;
+          combatLog.push(
+            `${step.enemy.name} ${intent === "heavy" ? "HEAVY attacks" : "attacks"} → ${incoming} damage`
+          );
+          enemyTurn = { roll: 0, damage: incoming, result: intent === "heavy" ? "heavy" : "hit" };
+        }
       } else {
-        combatLog.push(`${step.enemy.name} attacks (${enemyTurn.roll}) → ${enemyTurn.result === "heavy" ? "HEAVY HIT" : "HIT"}`);
-        combatLog.push(`You take ${incoming} damage`);
+        // V1: random enemy turn
+        enemyTurn = resolveEnemyTurn(enemy);
+        let incoming = enemyTurn.damage;
+        if (action === "defend") incoming = Math.ceil(incoming * 0.5);
+        playerHp    = Math.max(0, playerHp - incoming);
+        actualTaken += incoming;
+
+        if (action === "defend" && enemyTurn.result !== "miss") combatLog.push(`🛡️ You brace — damage halved`);
+        if (enemyTurn.result === "miss") {
+          combatLog.push(`${step.enemy.name} attacks (${enemyTurn.roll}) → MISS`);
+        } else {
+          combatLog.push(`${step.enemy.name} attacks (${enemyTurn.roll}) → ${enemyTurn.result === "heavy" ? "HEAVY HIT" : "HIT"}`);
+          combatLog.push(`You take ${incoming} damage`);
+        }
       }
+    }
+
+    // V2: reset roll bonus; compute next intent for display
+    let nextIntent = gameState.intent;
+    const playerNext = {
+      ...gameState.player,
+      hp: Math.max(0, playerHp),
+      ...(isV2 && { nextRollBonus: action === "defend" ? 2 : 0 }),
+    };
+    if (isV2 && enemy.hp > 0) {
+      const nextIdx    = (enemy.turnIndex || 0) + 1;
+      enemy.turnIndex  = nextIdx;
+      nextIntent       = step.enemy.behavior[nextIdx % step.enemy.behavior.length];
+    } else if (isV2) {
+      nextIntent = null;
     }
 
     // ── Accumulate battle stats ───────────────────────────────────────────
@@ -206,11 +306,13 @@ export async function resolveStep(gameState, playerInput) {
     // ── Resolve ──────────────────────────────────────────────────────────
     let next = {
       ...gameState,
-      player:     { ...gameState.player, hp: Math.max(0, playerHp) },
+      player:     playerNext,
       enemy:      enemy.hp > 0 ? enemy : null,
       combatLog,
       battleStats,
       battleLog,
+      status,
+      intent:     nextIntent,
     };
 
     const lastRoll = {
@@ -223,7 +325,6 @@ export async function resolveStep(gameState, playerInput) {
     if (combatOver) {
       const outcome  = enemy.hp <= 0 ? "victory" : "defeat";
       const nextStep = outcome === "victory" ? step.onVictory : step.onDefeat;
-      // gold is awarded via the loot step, not here
       const narration = await getNarration({ step, playerInput, gameState: next, roll: playerRoll, success: playerHit, isCrit });
       return {
         ...next,

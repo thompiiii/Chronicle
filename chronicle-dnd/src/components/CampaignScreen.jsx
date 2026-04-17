@@ -102,7 +102,29 @@ function PlayerPanel({ player }) {
   );
 }
 
-function ActionBar({ onAttack, onDefend, onHeavy, loading }) {
+function StatusBadges({ statuses }) {
+  if (!statuses || statuses.length === 0) return null;
+  return (
+    <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap", paddingTop: "0.2rem" }}>
+      {statuses.map((s, i) => {
+        const colors = {
+          guard:   { bg: "rgba(50,100,200,0.15)",  border: "rgba(50,100,200,0.45)",  text: "#7090e8" },
+          stagger: { bg: "rgba(200,150,0,0.15)",   border: "rgba(200,150,0,0.45)",   text: "#e8c060" },
+          bleed:   { bg: "rgba(200,0,0,0.15)",     border: "rgba(200,0,0,0.45)",     text: "#e87070" },
+        }[s.type] ?? { bg: "var(--c-surface2)", border: "var(--c-border)", text: "var(--c-text-muted)" };
+        const icon = { guard: "🛡️", stagger: "💫", bleed: "🩸" }[s.type] ?? "●";
+        return (
+          <span key={i} style={{ fontSize: "0.55rem", padding: "0.1rem 0.45rem", borderRadius: 10,
+            background: colors.bg, border: `1px solid ${colors.border}`, color: colors.text }}>
+            {icon} {s.type}{s.turns > 0 ? ` (${s.turns})` : ""}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+function ActionBar({ onAttack, onDefend, onHeavy, loading, isV2 }) {
   return (
     <div style={{ display: "flex", gap: "0.4rem" }}>
       <button onClick={onAttack} disabled={loading} className="c-encounter-btn c-encounter-btn-attack">
@@ -113,12 +135,12 @@ function ActionBar({ onAttack, onDefend, onHeavy, loading }) {
       <button onClick={onHeavy} disabled={loading} className="c-encounter-btn c-encounter-btn-heavy">
         <span style={{ fontSize: "1.1rem" }}>💥</span>
         <span>Heavy</span>
-        <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>−3 hit, ×2 dmg</span>
+        <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>{isV2 ? "−3 hit, ×2, stagger" : "−3 hit, ×2 dmg"}</span>
       </button>
       <button onClick={onDefend} disabled={loading} className="c-encounter-btn c-encounter-btn-defend">
         <span style={{ fontSize: "1.1rem" }}>🛡️</span>
         <span>Defend</span>
-        <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>Halve incoming</span>
+        <span style={{ fontSize: "0.55rem", opacity: 0.7 }}>{isV2 ? "Guard + +2 next roll" : "Halve incoming"}</span>
       </button>
     </div>
   );
@@ -342,6 +364,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
 
   const { lastRoll, combatLog } = gameState;
   const isCombat = step.type === "combat";
+  const isV2     = isCombat && !!(step.enemy?.behavior);
 
   return (
     <div className="chronicle-app c-campaign">
@@ -369,14 +392,27 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
       {isCombat && !gameState.pendingTransition && !gameState.gameOver && (
         <>
           <EnemyPanel enemy={gameState.enemy} step={step} />
+          {isV2 && <StatusBadges statuses={gameState.status?.enemy} />}
           <DiceDisplay lastRoll={lastRoll} />
           <CombatLog lines={combatLog} />
           <PlayerPanel player={gameState.player} />
+          {isV2 && <StatusBadges statuses={gameState.status?.player} />}
+
+          {/* V2: intent banner — shown before player chooses action */}
+          {isV2 && gameState.intent === "heavy" && (
+            <div style={{ background: "rgba(180,80,0,0.15)", border: "1px solid rgba(200,100,0,0.45)",
+              borderRadius: 6, padding: "0.45rem 0.85rem", color: "#e8a060",
+              fontSize: "0.8rem", fontWeight: 700, textAlign: "center", letterSpacing: "0.05em" }}>
+              ⚠️ Heavy Attack Incoming
+            </div>
+          )}
+
           <ActionBar
             onAttack={() => handleAction("I attack!")}
             onDefend={() => handleAction("I defend!")}
             onHeavy={()  => handleAction("heavy attack!")}
             loading={loading}
+            isV2={isV2}
           />
           {loading && (
             <p style={{ textAlign: "center", color: "var(--c-text-muted)", fontSize: "0.75rem", margin: 0 }}>Resolving turn…</p>

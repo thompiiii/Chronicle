@@ -4,6 +4,7 @@ import { getNarration } from "./game/aiClient";
 import { lookupEnemy, startEncounter, resolveEncounterRound, rollLoot } from "./game/encounterEngine";
 import { createCampaignState } from "./game/campaignEngine";
 import { goblinCaveCampaign } from "./campaigns/goblinCave";
+import { goblinCaveV2Campaign } from "./campaigns/goblinCaveV2";
 import CampaignScreen from "./components/CampaignScreen";
 
 const CLASSES = ["Barbarian","Bard","Cleric","Druid","Fighter","Monk","Paladin","Ranger","Rogue","Sorcerer","Warlock","Wizard"];
@@ -1192,6 +1193,10 @@ export default function App() {
 
             <button className="c-btn-ghost" onClick={() => { setCampaignState(createCampaignState(goblinCaveCampaign)); setScreen("campaign"); }}>
               ⚔️ Goblin Cave
+            </button>
+
+            <button className="c-btn-ghost" onClick={() => { setCampaignState(createCampaignState(goblinCaveV2Campaign)); setScreen("campaign"); }}>
+              ⚔️ Goblin Cave V2
             </button>
 
             {hasSaves && (
