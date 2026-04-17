@@ -129,6 +129,10 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-17 — Storeroom Key Gate
+- `campaigns/goblinCave.js` + `campaigns/goblinCaveV2.js`: added `requires: { item: "Storeroom Key" }` to storeroom choice in `inner-cave`
+- `components/CampaignScreen.jsx`: choice render now filters out choices where `requires.item` not in player inventory
+
 ### 2026-04-17 — Goblin Cave V2: Strategic Combat System
 - `campaigns/goblinCaveV2.js` (new): V2 campaign — same map/loot as V1, all combat enemies gain `behavior` (turn pattern) and `turnIndex`
 - `game/campaignEngine.js`:

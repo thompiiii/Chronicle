@@ -122,7 +122,7 @@ export const goblinCaveV2Campaign = {
         { text: "\"I'm here for the strongbox. Stand aside.\"", next: "chieftain"    },
         { text: "Attack without talking",                       next: "chieftain"    },
         { text: "Search for another way around",                next: "side-passage" },
-        { text: "Try the iron key on the storeroom door",       next: "storeroom"    },
+        { text: "Try the iron key on the storeroom door",       next: "storeroom",    requires: { item: "Storeroom Key" } },
       ],
     },
 

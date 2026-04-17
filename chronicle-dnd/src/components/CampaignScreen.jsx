@@ -469,7 +469,9 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
           )}
 
           {/* Choice buttons */}
-          {step.type === "choice" && step.choices.map(choice => (
+          {step.type === "choice" && step.choices
+            .filter(c => !c.requires?.item || gameState.player.inventory.some(i => i.name === c.requires.item))
+            .map(choice => (
             <button key={choice.next} onClick={() => handleChoice(choice.next)} className="c-choice-btn">
               <span>{choice.text}</span>
               <span style={{ color: "var(--c-border-bright)", fontSize: "1rem" }}>›</span>
