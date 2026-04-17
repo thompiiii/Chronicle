@@ -166,7 +166,7 @@ export const goblinCaveCampaign = {
       type:  "combat",
       title: "Grix, Goblin Chieftain",
       text:  "Grix hurls the bone aside and draws a jagged scimitar. The remaining goblins scatter into the shadows — this is between you and him.",
-      enemy: { name: "Grix the Chieftain", hp: 22, attack: 5, xp: 150, difficulty: 14 },
+      enemy: { name: "Grix the Chieftain", hp: 22, attack: 5, xp: 150, difficulty: 12 },
       onVictory: "loot-strongbox",
       onDefeat:  "defeat",
     },
