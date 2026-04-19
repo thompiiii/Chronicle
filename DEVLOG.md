@@ -129,6 +129,11 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-19 — Remove Vercel / Railway-ready backend
+- `server/index.js`: CORS now conditional on `NODE_ENV !== "production"`; added `express.static` + SPA fallback in prod mode so single Express process serves both API and built frontend
+- Local dev unchanged — Vite proxy still routes `/api` → `:3001`
+- Deploy path: `cd chronicle-dnd && npm run build`, then `NODE_ENV=production node server/index.js`
+
 ### 2026-04-17 — Storeroom Key Gate
 - `campaigns/goblinCave.js` + `campaigns/goblinCaveV2.js`: added `requires: { item: "Storeroom Key" }` to storeroom choice in `inner-cave`
 - `components/CampaignScreen.jsx`: choice render now filters out choices where `requires.item` not in player inventory

@@ -3,14 +3,22 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import Anthropic from "@anthropic-ai/sdk";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+const isProd = process.env.NODE_ENV === "production";
+const distPath = path.join(__dirname, "../chronicle-dnd/dist");
 
 // ── CORS — local dev only; lock to Vite dev server origin ─────────────────
-app.use(cors({
-  origin: ["http://localhost:5000", "http://127.0.0.1:5000"],
-  methods: ["POST", "GET"],
-}));
+if (!isProd) {
+  app.use(cors({
+    origin: ["http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:5173", "http://127.0.0.1:5173"],
+    methods: ["POST", "GET"],
+  }));
+}
 
 // ── Rate limit — 20 requests per minute per IP ────────────────────────────
 app.use(rateLimit({
@@ -100,6 +108,14 @@ Player character: ${character.name || "Adventurer"}, ${character.race || ""} ${c
 });
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
+
+// ── Static frontend (production only) ────────────────────────────────────
+if (isProd) {
+  app.use(express.static(distPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(distPath, "index.html"));
+  });
+}
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
