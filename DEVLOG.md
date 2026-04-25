@@ -129,6 +129,23 @@ chieftain (combat DC 14, 22hp) → loot-strongbox (loot) → victory (end)
 
 ## Change History
 
+### 2026-04-25 - Validation pass: install deps + fix lint blockers
+- Installed local dependencies in `chronicle-dnd/` and `server/` so the workspace can build and lint on this machine
+- `App.jsx`:
+  - removed unused imports/variables left behind from earlier iterations
+  - fixed `CombatTracker` hook order by moving the encounter return below the component state hooks
+  - updated the autosave effect dependency list to match the values it reads
+  - replaced an empty SSE parsing `catch` with an explicit ignore comment
+  - optimized autosave with a short debounce so repeated state updates do not synchronously write the full save payload to `localStorage` on every mutation
+  - replaced save restore message-id recovery with a loop helper instead of spreading the entire transcript into `Math.max(...)`
+  - added a helper for recent DM context so encounter detection reuses one bounded history scan instead of filtering the full transcript twice
+- `CampaignScreen.jsx`: aliased imported `useItem()` to avoid a React Hooks lint false-positive inside a state updater callback
+- `index.css`: moved Google Fonts import above `@import "tailwindcss"` to satisfy CSS import ordering during Vite build
+- `server/index.js`: changed the production SPA fallback from `app.get("*", ...)` to a regex route so Express 5 no longer crashes on startup in production mode
+- Validation status after install:
+  - `chronicle-dnd`: production build and lint pass cleanly
+  - `server`: local `.env` works for live validation; production startup now succeeds under Express 5
+
 ### 2026-04-19 — Remove Vercel / Railway-ready backend
 - `server/index.js`: CORS now conditional on `NODE_ENV !== "production"`; added `express.static` + SPA fallback in prod mode so single Express process serves both API and built frontend
 - Local dev unchanged — Vite proxy still routes `/api` → `:3001`

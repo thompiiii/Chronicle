@@ -112,7 +112,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 // ── Static frontend (production only) ────────────────────────────────────
 if (isProd) {
   app.use(express.static(distPath));
-  app.get("*", (req, res) => {
+  app.get(/.*/, (req, res) => {
     res.sendFile(path.join(distPath, "index.html"));
   });
 }

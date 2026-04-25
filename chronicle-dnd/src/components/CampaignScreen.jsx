@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { resolveStep, createCampaignState, goToStep, useItem, unequipWeapon } from "../game/campaignEngine";
+import { resolveStep, createCampaignState, goToStep, useItem as applyCampaignItem, unequipWeapon } from "../game/campaignEngine";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -355,7 +355,7 @@ export default function CampaignScreen({ gameState, setGameState, onBack }) {
   }
 
   function handleUseItem(itemName) {
-    setGameState(prev => useItem(prev, itemName));
+    setGameState(prev => applyCampaignItem(prev, itemName));
   }
 
   function handleUnequip() {

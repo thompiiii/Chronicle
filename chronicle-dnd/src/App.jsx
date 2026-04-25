@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { processTurn, applyTurnToState, formatRollSummary, shouldRoll } from "./game/gameEngine";
+import { processTurn, applyTurnToState, formatRollSummary } from "./game/gameEngine";
 import { getNarration } from "./game/aiClient";
 import { lookupEnemy, startEncounter, resolveEncounterRound, rollLoot } from "./game/encounterEngine";
 import { createCampaignState } from "./game/campaignEngine";
@@ -202,11 +202,6 @@ function calcAC(inventory, stats) {
   return base + (hasShield ? 2 : 0);
 }
 
-const card  = "bg-zinc-900 border border-zinc-800 rounded-xl";
-const btn   = "px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-bold tracking-wide transition-colors cursor-pointer";
-const btnSm = "px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-sm transition-colors cursor-pointer";
-const inp   = "bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-600 focus:outline-none focus:border-amber-500 w-full";
-
 // ── Campaign Save/Load Helpers ─────────────────────────────────────────────
 const SAVES_KEY = "chronicle_saves";
 
@@ -235,6 +230,23 @@ function saveCampaign({ id, character, messages, inventory, gold, currentHp, use
     saves.unshift(entry);
   }
   writeSaves(saves);
+}
+
+function getNextMessageId(messages) {
+  let nextId = msgIdCounter;
+  for (const message of messages ?? []) {
+    if (typeof message?.id === "number") nextId = Math.max(nextId, message.id + 1);
+  }
+  return nextId;
+}
+
+function getRecentDmTexts(messages, count) {
+  const recent = [];
+  for (let i = (messages?.length ?? 0) - 1; i >= 0 && recent.length < count; i -= 1) {
+    const message = messages[i];
+    if (message?.role === "dm" && typeof message.text === "string") recent.unshift(message.text);
+  }
+  return recent;
 }
 
 function deleteSave(id) {
@@ -430,10 +442,6 @@ function LiveCombatView({ encounter, character, currentHp }) {
 // ── Combat Tracker ────────────────────────────────────────────────────────
 // Live encounter dashboard when in combat; manual initiative tracker when idle.
 function CombatTracker({ character, currentHp, encounterState }) {
-  if (encounterState) {
-    return <LiveCombatView encounter={encounterState} character={character} currentHp={currentHp} />;
-  }
-
   // ── Manual initiative tracker (no active encounter) ───────────────────────
   const [combatants, setCombatants] = useState(() =>
     character ? [{ id: "player", name: character.name, initiative: 0, hp: currentHp, maxHp: character.hp, isPlayer: true }] : []
@@ -443,6 +451,10 @@ function CombatTracker({ character, currentHp, encounterState }) {
   const [newName, setNewName] = useState("");
   const [newInit, setNewInit] = useState("");
   const [started, setStarted] = useState(false);
+
+  if (encounterState) {
+    return <LiveCombatView encounter={encounterState} character={character} currentHp={currentHp} />;
+  }
 
   const sorted = [...combatants].sort((a, b) => b.initiative - a.initiative);
 
@@ -493,7 +505,7 @@ function CombatTracker({ character, currentHp, encounterState }) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem", marginBottom: "0.5rem" }}>
-        {(started ? sorted : combatants).map((c, i) => {
+        {(started ? sorted : combatants).map((c) => {
           const isActive = started && sorted[currentIdx]?.id === c.id;
           return (
             <div key={c.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", borderRadius: 4, padding: "0.35rem 0.5rem", fontSize: "0.75rem", background: isActive ? "rgba(200,169,110,0.06)" : "var(--c-bg)", border: `1px solid ${isActive ? "var(--c-accent-dim)" : "var(--c-border)"}` }}>
@@ -764,7 +776,6 @@ export default function App() {
   const [sessionCode, setSessionCode] = useState("");
   const [inputCode, setInputCode] = useState("");
   const [playerName, setPlayerName] = useState("");
-  const [isHost, setIsHost] = useState(false);
   const [charClass, setCharClass] = useState("Fighter");
   const [charRace, setCharRace] = useState("Human");
   const [charName, setCharName] = useState("");
@@ -772,7 +783,6 @@ export default function App() {
   const [messages, setMessages] = useState([makeMsg("dm", SAMPLE_CAMPAIGN)]);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [dmOverride, setDmOverride] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [character, setCharacter] = useState(null);
   const [activeTab, setActiveTab] = useState(null);
@@ -798,10 +808,9 @@ export default function App() {
   const [charBackground, setCharBackground] = useState("acolyte");
   const [thinkingIdx, setThinkingIdx] = useState(0);
   const chatRef = useRef(null);
-  const mockIndex = useRef(0);
   const inputRef = useRef(null);
-  const autoSendTimeout = useRef(null);
   const narratorVoice = useRef(null);
+  const autoSaveTimeout = useRef(null);
 
   // Load the narrator voice once and cache it — getVoices() is async on first call
   useEffect(() => {
@@ -827,6 +836,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    return () => {
+      if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!loading) return;
     const id = setInterval(() => setThinkingIdx(i => i + 1), 2000);
     return () => clearInterval(id);
@@ -834,10 +849,18 @@ export default function App() {
 
   // Auto-save whenever key state changes (only while in game)
   useEffect(() => {
-    if (screen === "game" && character && campaignId) {
+    if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    if (!(screen === "game" && character && campaignId)) return;
+
+    autoSaveTimeout.current = setTimeout(() => {
       saveCampaign({ id: campaignId, character, messages, inventory, gold, currentHp, usedSlots, conditions, notes, deathSaves, sessionCode, playerName });
-    }
-  }, [messages, inventory, gold, currentHp, usedSlots, conditions, notes, deathSaves]);
+      autoSaveTimeout.current = null;
+    }, 400);
+
+    return () => {
+      if (autoSaveTimeout.current) clearTimeout(autoSaveTimeout.current);
+    };
+  }, [screen, character, campaignId, messages, inventory, gold, currentHp, usedSlots, conditions, notes, deathSaves, sessionCode, playerName]);
 
   function triggerSaveFlash() {
     setJustSaved(true);
@@ -847,7 +870,6 @@ export default function App() {
   function createSession() {
     const code = Math.random().toString(36).substring(2, 7).toUpperCase();
     setSessionCode(code);
-    setIsHost(true);
     setCharStep(0);
     setCharName("");
     setScreen("character");
@@ -856,7 +878,6 @@ export default function App() {
   function joinSession() {
     if (inputCode.trim().length < 4) return;
     setSessionCode(inputCode.toUpperCase());
-    setIsHost(false);
     setCharStep(0);
     setCharName("");
     setScreen("character");
@@ -886,7 +907,7 @@ export default function App() {
   }
 
   function continueGame(save) {
-    msgIdCounter = Math.max(msgIdCounter, ...save.messages.map(m => m.id + 1));
+    msgIdCounter = getNextMessageId(save.messages);
     const char = { level: 1, ...save.character };
     setCharacter(char);
     setCurrentHp(save.currentHp ?? char.hp ?? 10);
@@ -900,7 +921,6 @@ export default function App() {
     setConditions(save.conditions || []);
     setNotes(save.notes || "");
     setDeathSaves(save.deathSaves || { successes: 0, failures: 0 });
-    setIsHost(true);
     setScreen("game");
   }
 
@@ -948,7 +968,9 @@ export default function App() {
           if (!line.startsWith("data: ")) continue;
           const d = line.slice(6);
           if (d === "[DONE]") break;
-          try { const p = JSON.parse(d); if (p.text) text += p.text; } catch {}
+          try { const p = JSON.parse(d); if (p.text) text += p.text; } catch {
+            // Ignore malformed SSE chunks and keep reading the stream.
+          }
         }
       }
       const match = text.match(/\{[\s\S]*\}/);
@@ -1027,17 +1049,17 @@ export default function App() {
         // Auto-start an encounter when an attack intent is detected and no
         // encounter is active. Try the lookup table first; fall back to AI.
         if (!activeEncounter && (combatActionHint === "attack" || turnResult.intent === "attack")) {
+          const recentDmTexts = getRecentDmTexts(messages, 3);
           // 1. Check player message for an enemy keyword
           let enemy = lookupEnemy(msg);
           // 2. Check recent DM narration (player often just says "I attack!" while
           //    the DM already described the enemy)
           if (!enemy) {
-            const recentDm = messages.filter(m => m.role === "dm").slice(-3).map(m => m.text).join(" ");
-            enemy = lookupEnemy(recentDm);
+            enemy = lookupEnemy(recentDmTexts.join(" "));
           }
           // 3. AI fallback for exotic/named enemies not in the table
           if (!enemy) {
-            const dmContext = messages.filter(m => m.role === "dm").slice(-2).map(m => m.text).join("\n");
+            const dmContext = recentDmTexts.slice(-2).join("\n");
             enemy = await generateEnemyAI(msg, dmContext);
           }
           if (enemy) {
